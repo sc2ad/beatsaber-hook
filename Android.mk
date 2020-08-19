@@ -37,7 +37,7 @@ LOCAL_SRC_FILES += $(call rwildcard,src/utils,*.cpp)
 LOCAL_SRC_FILES += $(call rwildcard,src/config,*.cpp)
 LOCAL_SHARED_LIBRARIES += modloader
 LOCAL_LDLIBS += -llog
-LOCAL_CFLAGS += -DVERSION='"0.3.9"' -isystem 'extern/libil2cpp/il2cpp/libil2cpp' -D'UNITY_2019' -Wall -Wextra -Werror -Wno-unused-function -DID='"beatsaber-hook"' -I'./shared' -isystem 'extern' -isystem 'extern/codegen/include'
+LOCAL_CFLAGS += -DVERSION='"0.4.4"' -isystem 'extern/libil2cpp/il2cpp/libil2cpp' -D'UNITY_2019' -Wall -Wextra -Werror -Wno-unused-function -DID='"beatsaber-hook"' -I'./shared' -isystem 'extern' -isystem 'extern/codegen/include'
 LOCAL_C_INCLUDES += ./shared
 LOCAL_CPP_FEATURES += rtti
 include $(BUILD_SHARED_LIBRARY)
