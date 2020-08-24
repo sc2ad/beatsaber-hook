@@ -30,14 +30,21 @@ LOCAL_MODULE := modloader
 LOCAL_EXPORT_C_INCLUDES := extern/modloader
 LOCAL_SRC_FILES := extern/libmodloader.so
 include $(PREBUILT_SHARED_LIBRARY)
+# Creating prebuilt for dependency: modloader - version: 0.1.1
+include $(CLEAR_VARS)
+LOCAL_MODULE := modloader_0_1_1
+LOCAL_EXPORT_C_INCLUDES := extern/modloader
+LOCAL_SRC_FILES := extern/libmodloader.so
+include $(PREBUILT_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)
-LOCAL_MODULE := beatsaber-hook
+LOCAL_MODULE := beatsaber-hook_0_4_5
 LOCAL_SRC_FILES += $(call rwildcard,src/utils,*.cpp)
 LOCAL_SRC_FILES += $(call rwildcard,src/config,*.cpp)
 LOCAL_SHARED_LIBRARIES += modloader
+LOCAL_SHARED_LIBRARIES += modloader_0_1_1
 LOCAL_LDLIBS += -llog
-LOCAL_CFLAGS += -DVERSION='"0.3.9"' -isystem 'extern/libil2cpp/il2cpp/libil2cpp' -D'UNITY_2019' -Wall -Wextra -Werror -Wno-unused-function -DID='"beatsaber-hook"' -I'./shared' -isystem 'extern' -isystem 'extern/codegen/include'
+LOCAL_CFLAGS += -DVERSION='"0.4.5"' -isystem 'extern/libil2cpp/il2cpp/libil2cpp' -D'UNITY_2019' -Wall -Wextra -Werror -Wno-unused-function -DID='"beatsaber-hook"' -I'./shared' -isystem 'extern' -isystem 'extern/codegen/include'
 LOCAL_C_INCLUDES += ./shared
 LOCAL_CPP_FEATURES += rtti
 include $(BUILD_SHARED_LIBRARY)
