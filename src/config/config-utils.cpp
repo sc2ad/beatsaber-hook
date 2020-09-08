@@ -83,7 +83,7 @@ std::string Configuration::getConfigFilePath(const ModInfo& info) {
         #ifdef __aarch64__
         Configuration::configDir = string_format(CONFIG_PATH_FORMAT, Modloader::getApplicationId().c_str());
         #else
-        Configuration::configDir = string_format(CONFIG_PATH_FORMAT, "com.beatgames.beatsaber");
+        Configuration::configDir = string_format(CONFIG_PATH_FORMAT, PACKAGE_ID);
         #endif
         if (!direxists(Configuration::configDir->c_str())) {
             mkpath(Configuration::configDir->data(), 0700);

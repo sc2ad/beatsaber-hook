@@ -3,6 +3,7 @@
 
 #ifndef __aarch64__
 #define LIBIL2CPP_PATH "/data/data/com.beatgames.beatsaber-1/lib/armeabi-v7a/libil2cpp.so"
+#define PACKAGE_ID "com.beatgames.beatsaber"
 #endif
 
 #include <cxxabi.h>
