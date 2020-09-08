@@ -80,7 +80,11 @@ bool parsejson(ConfigDocument& doc, std::string_view js) {
 
 std::string Configuration::getConfigFilePath(const ModInfo& info) {
     if (!Configuration::configDir) {
+        #ifdef __aarch64__
         Configuration::configDir = string_format(CONFIG_PATH_FORMAT, Modloader::getApplicationId().c_str());
+        #else
+        Configuration::configDir = string_format(CONFIG_PATH_FORMAT, "com.beatgames.beatsaber");
+        #endif
         if (!direxists(Configuration::configDir->c_str())) {
             mkpath(Configuration::configDir->data(), 0700);
         }

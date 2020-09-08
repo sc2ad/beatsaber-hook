@@ -53,7 +53,11 @@ std::string string_vformat(const std::string_view format, va_list args) {
 
 static std::unordered_set<const void*> analyzed;
 void analyzeBytes(std::stringstream& ss, const void* ptr, int indent) {
+    #ifdef __aarch64__
     if (!ptr || ((const uintptr_t)ptr) > 0x7fffffffffll) return;
+    #else
+    if (!ptr || ((const uintptr_t)ptr) > 0x7fffffffl) return;
+    #endif
 
     tabs(ss, indent);
     if (analyzed.count(ptr)) {
@@ -66,7 +70,11 @@ void analyzeBytes(std::stringstream& ss, const void* ptr, int indent) {
     auto asUInts = reinterpret_cast<const uintptr_t*>(ptr);
     auto asInts = reinterpret_cast<const intptr_t*>(ptr);
     auto asChars = reinterpret_cast<const char*>(ptr);
+    #ifdef __aarch64__
     if (asUInts[0] >= 0x1000000000000ll && isprint(asChars[0])) {
+    #else
+    if (asUInts[0] >= 0x10000000l && isprint(asChars[0])) {
+    #endif
         ss << "chars: \"" << asChars << "\"";
         ss << " (first 8 bytes in hex = 0x" << std::hex << std::setw(16) << asUInts[0] << ")";
         print(ss);
@@ -76,11 +84,20 @@ void analyzeBytes(std::stringstream& ss, const void* ptr, int indent) {
         if (i != 0) tabs(ss, indent);
 
         ss << "pos " << std::dec << i << ": 0x" << std::hex << std::setw(16) << asUInts[i];
+        #ifdef __aarch64__
         if (asUInts[i] >= 0x8000000000ll) {
+        #else
+        if (asUInts[i] >= 0x80000000l) {
+        #endif
             // todo: read no more than 8 chars or move asInts to last aligned point in string
             ss << " (as chars = \"" << reinterpret_cast<const char*>(asUInts + i) << "\")";
             ss << " (as int = " << std::dec << asInts[i] << ")";  // signed int
-        } else if (asUInts[i] <= 0x7f00000000ll) {
+        }
+        #ifdef __aarch64__
+        else if (asUInts[i] <= 0x7f00000000ll) {
+        #else
+        else if (asUInts[i] <= 0x7f000000l) {
+        #endif
             ss << " (as int = " << std::dec << asUInts[i] << ")";
         }
         else {
@@ -95,7 +112,11 @@ void analyzeBytes(std::stringstream& ss, const void* ptr, int indent) {
             }
         }
         print(ss);
+        #ifdef __aarch64__
         if (asUInts[i] > 0x7f00000000ll) {
+        #else
+        if (asUInts[i] > 0x7f000000l) {
+        #endif
             analyzeBytes(ss, (void*)asUInts[i], indent + 1);
         }
     }
@@ -168,7 +189,11 @@ intptr_t getRealOffset(const void* offset) // calculate dump.cs address + lib.so
         //arm
         // TOOD: Lets get the instance via some sort of initialization function
         // OR we make EVERYTHING on an instance level
+        #ifdef __aarch64__
         location = baseAddr(Modloader::getLibIl2CppPath().c_str());
+        #else
+        location = baseAddr(LIBIL2CPP_PATH);
+        #endif
     }
     return location + (intptr_t)offset;
 }

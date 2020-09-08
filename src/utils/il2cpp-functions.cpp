@@ -2,7 +2,6 @@
 
 #include "../../shared/utils/utils.h"
 #include "../../shared/utils/il2cpp-functions.hpp"
-#include "../../shared/utils/instruction-parsing.hpp"
 #include "../../shared/utils/logging.hpp"
 #include "modloader/shared/modloader.hpp"
 
@@ -274,105 +273,7 @@ int (*il2cpp_functions::class_get_userdata_offset)();
 const Il2CppType* (*il2cpp_functions::class_get_type_const)(const Il2CppClass * klass);
 const char* (*il2cpp_functions::class_get_name_const)(const Il2CppClass * klass);
 
-// SELECT NON-API LIBIL2CPP FUNCTIONS:
-bool (*il2cpp_functions::Class_Init)(Il2CppClass* klass);
-
-Il2CppClass* (*il2cpp_functions::MetadataCache_GetTypeInfoFromTypeDefinitionIndex)(TypeDefinitionIndex index);
-Il2CppClass* (*il2cpp_functions::MetadataCache_GetTypeInfoFromTypeIndex)(TypeIndex index);
-
-#ifdef UNITY_2019
-std::string (*il2cpp_functions::_Type_GetName_)(const Il2CppType *type, Il2CppTypeNameFormat format);
-#else
-gnu_string (*il2cpp_functions::_Type_GetName_)(const Il2CppType *type, Il2CppTypeNameFormat format);
-#endif
-void (*il2cpp_functions::GC_free)(void* addr);
-
-Il2CppClass* (*il2cpp_functions::Class_FromIl2CppType)(Il2CppType* typ);
-Il2CppClass* (*il2cpp_functions::Class_GetPtrClass)(Il2CppClass* elementClass);
-Il2CppClass* (*il2cpp_functions::GenericClass_GetClass)(Il2CppGenericClass* gclass);
-AssemblyVector* (*il2cpp_functions::Assembly_GetAllAssemblies)();
-
-const Il2CppMetadataRegistration** il2cpp_functions::s_Il2CppMetadataRegistrationPtr;
-const void** il2cpp_functions::s_GlobalMetadataPtr;
-const Il2CppGlobalMetadataHeader** il2cpp_functions::s_GlobalMetadataHeaderPtr;
-
-std::remove_pointer_t<decltype(il2cpp_functions::s_GlobalMetadataPtr)> il2cpp_functions::s_GlobalMetadata;
-std::remove_pointer_t<decltype(il2cpp_functions::s_GlobalMetadataHeaderPtr)> il2cpp_functions::s_GlobalMetadataHeader;
-const Il2CppDefaults* il2cpp_functions::defaults;
-bool il2cpp_functions::initialized;
-
-// copies of the highly-inlinable functions
-const Il2CppTypeDefinition* il2cpp_functions::MetadataCache_GetTypeDefinitionFromIndex(TypeDefinitionIndex index) {
-    CheckS_GlobalMetadata();
-    if (index == kTypeDefinitionIndexInvalid) return NULL;
-
-    IL2CPP_ASSERT(index >= 0 && static_cast<uint32_t>(index) < s_GlobalMetadataHeader->typeDefinitionsCount / sizeof(Il2CppTypeDefinition));
-    auto typeDefinitions = (const Il2CppTypeDefinition*)((const char*)s_GlobalMetadata + s_GlobalMetadataHeader->typeDefinitionsOffset);
-    return typeDefinitions + index;
-}
-
-const char* il2cpp_functions::MetadataCache_GetStringFromIndex(StringIndex index) {
-    CheckS_GlobalMetadata();
-    IL2CPP_ASSERT(index <= s_GlobalMetadataHeader->stringCount);
-    const char* strings = ((const char*)s_GlobalMetadata + s_GlobalMetadataHeader->stringOffset) + index;
-    return strings;
-}
-
-const Il2CppGenericContainer* il2cpp_functions::MetadataCache_GetGenericContainerFromIndex(GenericContainerIndex index) {
-    CheckS_GlobalMetadata();
-    if (index == kGenericContainerIndexInvalid) return NULL;
-
-    IL2CPP_ASSERT(index >= 0 && static_cast<uint32_t>(index) <= s_GlobalMetadataHeader->genericContainersCount / sizeof(Il2CppGenericContainer));
-    const Il2CppGenericContainer* genericContainers = (const Il2CppGenericContainer*)((const char*)s_GlobalMetadata + s_GlobalMetadataHeader->genericContainersOffset);
-    return genericContainers + index;
-}
-
-const Il2CppGenericParameter* il2cpp_functions::MetadataCache_GetGenericParameterFromIndex(GenericParameterIndex index) {
-    CheckS_GlobalMetadata();
-    if (index == kGenericParameterIndexInvalid) return NULL;
-
-    IL2CPP_ASSERT(index >= 0 && static_cast<uint32_t>(index) <= s_GlobalMetadataHeader->genericParametersCount / sizeof(Il2CppGenericParameter));
-    const Il2CppGenericParameter* genericParameters = (const Il2CppGenericParameter*)((const char*)s_GlobalMetadata + s_GlobalMetadataHeader->genericParametersOffset);
-    return genericParameters + index;
-}
-
-TypeDefinitionIndex il2cpp_functions::MetadataCache_GetExportedTypeFromIndex(TypeDefinitionIndex index) {
-    CheckS_GlobalMetadata();
-    if (index == kTypeDefinitionIndexInvalid) return kTypeDefinitionIndexInvalid;
-
-    IL2CPP_ASSERT(index >= 0 && static_cast<uint32_t>(index) < s_GlobalMetadataHeader->exportedTypeDefinitionsCount / sizeof(TypeDefinitionIndex));
-    auto exportedTypes = (TypeDefinitionIndex*)((const char*)s_GlobalMetadata + s_GlobalMetadataHeader->exportedTypeDefinitionsOffset);
-    return *(exportedTypes + index);
-}
-
-Il2CppClass* il2cpp_functions::MetadataCache_GetNestedTypeFromIndex(NestedTypeIndex index) {
-    CheckS_GlobalMetadata();
-    IL2CPP_ASSERT(index >= 0 && static_cast<uint32_t>(index) <= s_GlobalMetadataHeader->nestedTypesCount / sizeof(TypeDefinitionIndex));
-    auto nestedTypeIndices = (const TypeDefinitionIndex*)((const char*)s_GlobalMetadata + s_GlobalMetadataHeader->nestedTypesOffset);
-
-    return il2cpp_functions::MetadataCache_GetTypeInfoFromTypeDefinitionIndex(nestedTypeIndices[index]);
-}
-
-TypeDefinitionIndex il2cpp_functions::MetadataCache_GetIndexForTypeDefinition(const Il2CppClass* typeDefinition) {
-    CheckS_GlobalMetadata();
-    IL2CPP_ASSERT(typeDefinition->typeDefinition);
-    const Il2CppTypeDefinition* typeDefinitions = (const Il2CppTypeDefinition*)((const char*)s_GlobalMetadata + s_GlobalMetadataHeader->typeDefinitionsOffset);
-
-    IL2CPP_ASSERT(typeDefinition->typeDefinition >= typeDefinitions && typeDefinition->typeDefinition < typeDefinitions + s_GlobalMetadataHeader->typeDefinitionsCount);
-
-    ptrdiff_t index = typeDefinition->typeDefinition - typeDefinitions;
-    IL2CPP_ASSERT(index <= std::numeric_limits<TypeDefinitionIndex>::max());
-    return static_cast<TypeDefinitionIndex>(index);
-}
-
-char* il2cpp_functions::Type_GetName(const Il2CppType *type, Il2CppTypeNameFormat format) {
-    if (!il2cpp_functions::_Type_GetName_) return nullptr;
-    // TODO debug the ref/lifetime weirdness with _Type_GetName_ to avoid the need for explicit allocation
-    const auto str = il2cpp_functions::_Type_GetName_(type, format);
-    char* buffer = static_cast<char*>(il2cpp_functions::alloc(str.length() + 1));
-    memcpy(buffer, str.c_str(), str.length() + 1);
-    return buffer;
-}
+bool il2cpp_functions::initialized = false;
 
 #ifdef FILE_LOG
 // closes log on application shutdown
@@ -391,7 +292,11 @@ void il2cpp_functions::Init() {
     }
     Logger::get().info("il2cpp_functions: Init: Initializing all IL2CPP Functions...");
     dlerror();  // clears existing errors
+    #ifdef __aarch64__
     auto path = Modloader::getLibIl2CppPath().c_str();
+    #else
+    auto path = LIBIL2CPP_PATH;
+    #endif
     void *imagehandle = dlopen(path, RTLD_GLOBAL | RTLD_LAZY);
     if (!imagehandle) {
         Logger::get().error("Failed to dlopen %s: %s!", path, dlerror());
@@ -890,101 +795,6 @@ void il2cpp_functions::Init() {
     if (err) {
         Logger::get().critical("A dlsym failed! dlerror: %s", err);
     }
-
-    // XREF TRACES
-    // Class::Init. 0x846A68 in 1.5, 0x9EC0A4 in 1.7.0, 0xA6D1B8 in 1.8.0b1
-    Instruction ans((const int32_t*)array_new_specific);
-    Instruction Array_NewSpecific(CRASH_UNLESS(ans.label));
-    Logger::get().debug("Array::NewSpecific offset: %lX", ((intptr_t)Array_NewSpecific.addr) - getRealOffset(0));
-    auto j2Cl_I = CRASH_UNLESS(Array_NewSpecific.findNthCall(1));  // also the 113th call in Runtime::Init
-    Class_Init = (decltype(Class_Init))CRASH_UNLESS(j2Cl_I->label);
-    Logger::get().debug("Class::Init found? offset: %lX", ((intptr_t)Class_Init) - getRealOffset(0));
-    usleep(1000);  // 0.001s
-
-    // MetadataCache::GetTypeInfoFromTypeIndex. offset 0x84F764 in 1.5, 0x9F5250 in 1.7.0, 0xA7A79C in 1.8.0b1
-    Instruction caha((const int32_t*)custom_attrs_has_attr);
-    Instruction MetadataCache_HasAttribute(CRASH_UNLESS(caha.label));
-    auto j2MC_GTIFTI = CRASH_UNLESS(MetadataCache_HasAttribute.findNthCall(1));
-    MetadataCache_GetTypeInfoFromTypeIndex = (decltype(MetadataCache_GetTypeInfoFromTypeIndex))CRASH_UNLESS(j2MC_GTIFTI->label);
-    Logger::get().debug("MetadataCache::GetTypeInfoFromTypeIndex found? offset: %lX",
-        ((intptr_t)MetadataCache_GetTypeInfoFromTypeIndex) - getRealOffset(0));
-    usleep(1000);  // 0.001s
-
-    // MetadataCache::GetTypeInfoFromTypeDefinitionIndex. offset 0x84FBA4 in 1.5, 0x9F5690 in 1.7.0, 0xA75958 in 1.8.0b1
-    Instruction tgcoec((const int32_t*)type_get_class_or_element_class);
-    Instruction Type_GetClassOrElementClass(CRASH_UNLESS(tgcoec.label));
-    auto j2MC_GTIFTDI = CRASH_UNLESS(Type_GetClassOrElementClass.findNthDirectBranchWithoutLink(5));
-    MetadataCache_GetTypeInfoFromTypeDefinitionIndex =
-        (decltype(MetadataCache_GetTypeInfoFromTypeDefinitionIndex))CRASH_UNLESS(j2MC_GTIFTDI->label);
-    Logger::get().debug("MetadataCache::GetTypeInfoFromTypeDefinitionIndex found? offset: %lX",
-        ((intptr_t)MetadataCache_GetTypeInfoFromTypeDefinitionIndex) - getRealOffset(0));
-    usleep(1000);  // 0.001s
-
-    // Type::GetName. offset 0x8735DC in 1.5, 0xA1A458 in 1.7.0, 0xA7B634 in 1.8.0b1
-    Instruction tanq((const int32_t*)type_get_assembly_qualified_name);
-    auto j2T_GN = CRASH_UNLESS(tanq.findNthCall(1));
-    _Type_GetName_ = (decltype(_Type_GetName_))CRASH_UNLESS(j2T_GN->label);
-    Logger::get().debug("Type::GetName found? offset: %lX", ((intptr_t)_Type_GetName_) - getRealOffset(0));
-    usleep(1000);  // 0.001s
-
-    // GenericClass::GetClass. offset 0x88DF64 in 1.5, 0xA34F20 in 1.7.0, 0xA6E4EC in 1.8.0b1
-    Instruction cfit((const int32_t*)class_from_il2cpp_type);
-    Class_FromIl2CppType = (decltype(Class_FromIl2CppType))CRASH_UNLESS(cfit.label);
-    auto caseStart = CRASH_UNLESS(EvalSwitch(Class_FromIl2CppType, 1, 1, IL2CPP_TYPE_GENERICINST));
-    auto j2GC_GC = CRASH_UNLESS(caseStart->findNthDirectBranchWithoutLink(1));
-    Logger::get().debug("j2GC_GC: %s", j2GC_GC->toString().c_str());
-    GenericClass_GetClass = (decltype(GenericClass_GetClass))CRASH_UNLESS(j2GC_GC->label);
-    Logger::get().debug("GenericClass::GetClass found? offset: %lX", ((intptr_t)GenericClass_GetClass) - getRealOffset(0));
-    usleep(1000);  // 0.001s
-
-    // Class::GetPtrClass.
-    auto ptrCase = CRASH_UNLESS(EvalSwitch(Class_FromIl2CppType, 1, 1, IL2CPP_TYPE_PTR));
-    auto j2C_GPC = CRASH_UNLESS(ptrCase->findNthDirectBranchWithoutLink(1));
-    Logger::get().debug("j2C_GPC: %s", j2C_GPC->toString().c_str());
-    Class_GetPtrClass = (decltype(Class_GetPtrClass))CRASH_UNLESS(j2C_GPC->label);
-    Logger::get().debug("Class::GetPtrClass(Il2CppClass*) found? offset: %lX", ((intptr_t)Class_GetPtrClass) - getRealOffset(0));
-    usleep(1000);  // 0.001s
-
-    // Assembly::GetAllAssemblies
-    Instruction dga((const int32_t*)domain_get_assemblies);
-    auto j2A_GAA = CRASH_UNLESS(dga.findNthCall(1));    
-    Assembly_GetAllAssemblies = (decltype(Assembly_GetAllAssemblies))CRASH_UNLESS(j2A_GAA->label);
-    Logger::get().debug("Assembly::GetAllAssemblies found? offset: %lX", ((intptr_t)Assembly_GetAllAssemblies) - getRealOffset(0));
-    usleep(1000);  // 0.001s
-
-    CRASH_UNLESS(shutdown);
-    // GC_free
-    Instruction sd((const int32_t*)shutdown);
-    auto* Runtime_Shutdown = CRASH_UNLESS(sd.label);
-    Instruction Runtime_Shutdown_inst(Runtime_Shutdown);
-    auto j2GC_FF = CRASH_UNLESS(Runtime_Shutdown_inst.findNthCall(5));
-    Instruction GC_FreeFixed(CRASH_UNLESS(j2GC_FF->label));
-    GC_free = (decltype(GC_free))CRASH_UNLESS(GC_FreeFixed.label);
-    Logger::get().debug("gc::GarbageCollector::FreeFixed found? offset: %lX", ((intptr_t)GC_free) - getRealOffset(0));
-    usleep(1000);  // 0.001s
-
-    Instruction iu16((const int32_t*)init_utf16);
-    auto j2R_I = CRASH_UNLESS(iu16.findNthCall(3));
-    Instruction Runtime_Init(CRASH_UNLESS(j2R_I->label));
-    auto ldr = CRASH_UNLESS(Runtime_Init.findNth(1, std::mem_fn(&Instruction::isLoad)));  // the load for the malloc that precedes our adrp
-    // alternatively, could just get the 1st ADRP in Runtime::Init with dest reg x20
-    il2cpp_functions::defaults = (decltype(il2cpp_functions::defaults))ExtractAddress(ldr->addr, 1, 1);
-    Logger::get().debug("il2cpp_defaults found? offset: %lX", ((intptr_t)defaults) - getRealOffset(0));
-    usleep(1000);  // 0.001s
-
-    // FIELDS
-    // Extract locations of s_GlobalMetadataHeader, s_Il2CppMetadataRegistration, & s_GlobalMetadata
-    // TODO: refactor to reduce instruction re-parsing?
-    il2cpp_functions::s_GlobalMetadataHeaderPtr = (decltype(il2cpp_functions::s_GlobalMetadataHeaderPtr))CRASH_UNLESS(
-        ExtractAddress(il2cpp_functions::MetadataCache_GetTypeInfoFromTypeDefinitionIndex, 3, 1));
-    usleep(1000);  // 0.001s
-    il2cpp_functions::s_Il2CppMetadataRegistrationPtr = (decltype(il2cpp_functions::s_Il2CppMetadataRegistrationPtr))CRASH_UNLESS(
-        ExtractAddress(il2cpp_functions::MetadataCache_GetTypeInfoFromTypeDefinitionIndex, 4, 1));
-    usleep(1000);  // 0.001s
-    il2cpp_functions::s_GlobalMetadataPtr = (decltype(il2cpp_functions::s_GlobalMetadataPtr))CRASH_UNLESS(
-        ExtractAddress(il2cpp_functions::MetadataCache_GetTypeInfoFromTypeDefinitionIndex, 5, 1));
-    usleep(1000);  // 0.001s
-    Logger::get().debug("All global constants found!");
 
     #ifdef FILE_LOG
     if (Runtime_Shutdown) {

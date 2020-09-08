@@ -1,6 +1,10 @@
 #ifndef UTILS_H_INCLUDED
 #define UTILS_H_INCLUDED
 
+#ifndef __aarch64__
+#define LIBIL2CPP_PATH "/data/data/com.beatgames.beatsaber-1/lib/armeabi-v7a/libil2cpp.so"
+#endif
+
 #include <cxxabi.h>
 #if __has_include(<string_view>)
 #include <string_view>

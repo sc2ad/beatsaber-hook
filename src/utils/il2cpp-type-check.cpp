@@ -42,7 +42,7 @@ namespace il2cpp_utils {
     Il2CppClass* MakeGeneric(const Il2CppClass* klass, std::vector<const Il2CppClass*> args) {
         il2cpp_functions::Init();
 
-        auto typ = RET_0_UNLESS(il2cpp_functions::defaults->systemtype_class);
+        auto typ = RET_0_UNLESS(il2cpp_utils::GetClassFromName("System", "Type"));
         auto klassType = RET_0_UNLESS(GetSystemType(klass));
 
         // Call Type.MakeGenericType on it
@@ -72,7 +72,7 @@ namespace il2cpp_utils {
     Il2CppClass* MakeGeneric(const Il2CppClass* klass, const Il2CppType** types, uint32_t numTypes) {
         il2cpp_functions::Init();
 
-        auto typ = RET_0_UNLESS(il2cpp_functions::defaults->systemtype_class);
+        auto typ = RET_0_UNLESS(GetClassFromName("System", "Type"));
         auto klassType = RET_0_UNLESS(GetSystemType(klass));
 
         // Call Type.MakeGenericType on it
@@ -101,5 +101,5 @@ namespace il2cpp_utils {
 template<int s, int t> struct check_size {
     static_assert(s == t, "wrong size");
 };
-check_size<sizeof(Il2CppObject), 0x10> il2cppObjectCheck;
-check_size<kIl2CppSizeOfArray, 0x20> il2cppArrayCheck;
+check_size<sizeof(Il2CppObject), sizeof(void*) * 2> il2cppObjectCheck;
+check_size<kIl2CppSizeOfArray, sizeof(Il2CppObject) + sizeof(void*) * 2> il2cppArrayCheck;

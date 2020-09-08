@@ -48,10 +48,11 @@ namespace il2cpp_utils {
                 il2cpp_functions::Init();
                 Il2CppClass* declaring = il2cpp_no_arg_class<typename T::declaring_type>::get();
                 Il2CppClass* classWithNested = declaring;
-                if (declaring->generic_class) {
-                    // Class::GetNestedTypes refuses to work on generic instances, so get the generic template instead
-                    classWithNested = CRASH_UNLESS(il2cpp_functions::MetadataCache_GetTypeInfoFromTypeDefinitionIndex(declaring->generic_class->typeDefinitionIndex));
-                }
+                // TODO: 32bit
+                // if (declaring->generic_class) {
+                //     // Class::GetNestedTypes refuses to work on generic instances, so get the generic template instead
+                //     classWithNested = CRASH_UNLESS(il2cpp_functions::MetadataCache_GetTypeInfoFromTypeDefinitionIndex(declaring->generic_class->typeDefinitionIndex));
+                // }
                 std::string typeName = type_name<T>();
                 auto idx = typeName.find_last_of(':');
                 if (idx >= 0) typeName = typeName.substr(idx+1);
@@ -83,15 +84,6 @@ namespace il2cpp_utils {
             }
         };
 
-        #define DEFINE_IL2CPP_DEFAULT_TYPE(type, fieldName) \
-        template<> \
-        struct ::il2cpp_utils::il2cpp_type_check::il2cpp_no_arg_class<type> { \
-            static inline Il2CppClass* get() { \
-                il2cpp_functions::Init(); \
-                return il2cpp_functions::defaults->fieldName##_class; \
-            } \
-        }
-
         #define DEFINE_IL2CPP_ARG_TYPE(type, nameSpace, className) \
         template<> \
         struct ::il2cpp_utils::il2cpp_type_check::il2cpp_no_arg_class<type> { \
@@ -100,28 +92,28 @@ namespace il2cpp_utils {
             } \
         }
 
-        DEFINE_IL2CPP_DEFAULT_TYPE(int8_t, sbyte);
-        DEFINE_IL2CPP_DEFAULT_TYPE(uint8_t, byte);
-        DEFINE_IL2CPP_DEFAULT_TYPE(int16_t, int16);  // "short"
-        DEFINE_IL2CPP_DEFAULT_TYPE(uint16_t, uint16);  // "ushort"
-        DEFINE_IL2CPP_DEFAULT_TYPE(int32_t, int32);  // "int"
-        DEFINE_IL2CPP_DEFAULT_TYPE(uint32_t, uint32);  // "uint"
-        DEFINE_IL2CPP_DEFAULT_TYPE(int64_t, int64);  // "long"
-        DEFINE_IL2CPP_DEFAULT_TYPE(uint64_t, uint64);  // "ulong"
+        DEFINE_IL2CPP_ARG_TYPE(int8_t, "System", "SByte");
+        DEFINE_IL2CPP_ARG_TYPE(uint8_t, "System", "Byte");
+        DEFINE_IL2CPP_ARG_TYPE(int16_t, "System", "Int16");  // "short"
+        DEFINE_IL2CPP_ARG_TYPE(uint16_t, "System", "UInt16");  // "ushort"
+        DEFINE_IL2CPP_ARG_TYPE(int32_t, "System", "Int32");  // "int"
+        DEFINE_IL2CPP_ARG_TYPE(uint32_t, "System", "UInt32");  // "uint"
+        DEFINE_IL2CPP_ARG_TYPE(int64_t, "System", "Int64");  // "long"
+        DEFINE_IL2CPP_ARG_TYPE(uint64_t, "System", "UInt64");  // "ulong"
 
-        DEFINE_IL2CPP_DEFAULT_TYPE(float, single);
-        DEFINE_IL2CPP_DEFAULT_TYPE(double, double);
+        DEFINE_IL2CPP_ARG_TYPE(float, "System", "Single");
+        DEFINE_IL2CPP_ARG_TYPE(double, "System", "Double");
 
-        DEFINE_IL2CPP_DEFAULT_TYPE(bool, boolean);
-        DEFINE_IL2CPP_DEFAULT_TYPE(Il2CppChar, char);
+        DEFINE_IL2CPP_ARG_TYPE(bool, "System", "Boolean");
+        DEFINE_IL2CPP_ARG_TYPE(Il2CppChar, "System", "Char");
 
         #ifdef NEED_UNSAFE_CSHARP
-        DEFINE_IL2CPP_DEFAULT_TYPE(void, void);
-        DEFINE_IL2CPP_DEFAULT_TYPE(Il2CppObject*, object);
+        DEFINE_IL2CPP_ARG_TYPE(void, "System", "Void");
+        DEFINE_IL2CPP_ARG_TYPE(Il2CppObject*, "System", "Object");
         #endif
-        DEFINE_IL2CPP_DEFAULT_TYPE(Il2CppString*, string);
-        DEFINE_IL2CPP_DEFAULT_TYPE(Il2CppReflectionType*, systemtype);
-        DEFINE_IL2CPP_DEFAULT_TYPE(Il2CppReflectionRuntimeType*, runtimetype);
+        DEFINE_IL2CPP_ARG_TYPE(Il2CppString*, "System", "String");
+        DEFINE_IL2CPP_ARG_TYPE(Il2CppReflectionType*, "System", "Type");
+        DEFINE_IL2CPP_ARG_TYPE(Il2CppReflectionRuntimeType*, "System", "RuntimeType");
 
         DEFINE_IL2CPP_ARG_TYPE(long double, "System", "Decimal");
         DEFINE_IL2CPP_ARG_TYPE(Color, "UnityEngine", "Color");
@@ -137,8 +129,7 @@ namespace il2cpp_utils {
             static inline Il2CppClass* get() {
                 il2cpp_functions::Init();
                 if constexpr (std::is_same_v<std::decay_t<TArg>, Il2CppObject*>) {
-                    il2cpp_functions::CheckS_GlobalMetadata();
-                    return il2cpp_functions::array_class_get(il2cpp_functions::defaults->object_class, 1);
+                    return il2cpp_functions::array_class_get(il2cpp_utils::GetClassFromName("System", "Object"), 1);
                 } else {
                     Il2CppClass* eClass = RET_0_UNLESS(il2cpp_no_arg_class<TArg>::get());
                     return il2cpp_functions::array_class_get(eClass, 1);
@@ -168,15 +159,16 @@ namespace il2cpp_utils {
         struct il2cpp_arg_class<T*> {
             static inline Il2CppClass* get(T* arg) {
                 using ptr_arg_class = il2cpp_no_arg_class<T*>;
-                using element_arg_class = il2cpp_no_arg_class<T>;
                 if constexpr (has_no_arg_get<ptr_arg_class>) {
                     if (!arg)
                         return ptr_arg_class::get();
                     // otherwise, falls through to Il2CppObject* handler
-                } else if constexpr (has_no_arg_get<element_arg_class>) {
-                    Il2CppClass* elementClass = element_arg_class::get();
-                    return il2cpp_functions::Class_GetPtrClass(elementClass);
                 }
+                // TODO: 32bit
+                // else if constexpr (has_no_arg_get<element_arg_class>) {
+                //     Il2CppClass* elementClass = element_arg_class::get();
+                //     return il2cpp_functions::Class_GetPtrClass(elementClass);
+                // }
                 il2cpp_functions::Init();
                 return RET_0_UNLESS(il2cpp_functions::object_get_class(reinterpret_cast<Il2CppObject*>(arg)));
             }
@@ -210,9 +202,10 @@ namespace il2cpp_utils {
                     static_assert(false_t<S<TArgs...>>);
                 }
                 auto* genInst = il2cpp_utils::MakeGeneric(genTemplate, {il2cpp_no_arg_class<TArgs>::get()...});
-                if (isStruct) {
-                    return il2cpp_functions::Class_GetPtrClass(genInst);
-                }
+                // TODO: 32bit
+                // if (isStruct) {
+                //     return il2cpp_functions::Class_GetPtrClass(genInst);
+                // }
                 return genInst;
             }
         };
