@@ -335,6 +335,7 @@ class il2cpp_functions {
 #endif
     // You must il2cpp_functions::free the char* when you are done with it
     static char* Type_GetName(const Il2CppType *type, Il2CppTypeNameFormat format);
+    static void (*GC_free)(void* addr);
 
     static Il2CppClass* (*Class_FromIl2CppType)(Il2CppType* typ);
     static Il2CppClass* (*Class_GetPtrClass)(Il2CppClass* elementClass);

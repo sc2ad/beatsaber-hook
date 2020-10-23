@@ -285,6 +285,7 @@ std::string (*il2cpp_functions::_Type_GetName_)(const Il2CppType *type, Il2CppTy
 #else
 gnu_string (*il2cpp_functions::_Type_GetName_)(const Il2CppType *type, Il2CppTypeNameFormat format);
 #endif
+void (*il2cpp_functions::GC_free)(void* addr);
 
 Il2CppClass* (*il2cpp_functions::Class_FromIl2CppType)(Il2CppType* typ);
 Il2CppClass* (*il2cpp_functions::Class_GetPtrClass)(Il2CppClass* elementClass);
@@ -371,6 +372,24 @@ char* il2cpp_functions::Type_GetName(const Il2CppType *type, Il2CppTypeNameForma
     char* buffer = static_cast<char*>(il2cpp_functions::alloc(str.length() + 1));
     memcpy(buffer, str.c_str(), str.length() + 1);
     return buffer;
+}
+
+static bool find_GC_free(const int32_t* Runtime_Shutdown) {
+    bool multipleMatches;
+    intptr_t sigMatch = findUniquePattern(multipleMatches, getRealOffset(0), "f8 5f bc a9 f6 57 01 a9 f4 4f 02 a9 "
+        "fd 7b 03 a9 fd c3 00 91 a0 08 00 b4 f3 03 00 aa ?? ?? ?? ?? 69 82 56 d3 4a ?? ?? 91 4b 0d 09 8b 49 55 40 f9 "
+        "0a 9c 9c 52 0a 04 a0 72 00 cc 74 92 68 fe 56 d3 6c 01 0a 8b 0a 03 84 52", "GC_free");
+    if (sigMatch && !multipleMatches) {
+        il2cpp_functions::GC_free = (decltype(il2cpp_functions::GC_free))sigMatch;
+    } else {
+        // xref tracing __WILL__ fail if Runtime_Shutdown is hooked by __ANY__ lib/mod, such as another bs-hook's file logger.
+        Instruction Runtime_Shutdown_inst(Runtime_Shutdown);
+        auto blr = RET_0_UNLESS(Runtime_Shutdown_inst.findNth(1, std::mem_fn(&Instruction::isIndirectBranch)));
+        auto j2GC_FF = RET_0_UNLESS(blr->findNthCall(5));  // BL(R)
+        Instruction GC_FreeFixed(RET_0_UNLESS(j2GC_FF->label));
+        il2cpp_functions::GC_free = (decltype(il2cpp_functions::GC_free))RET_0_UNLESS(GC_FreeFixed.label);
+    }
+    return true;
 }
 
 // closes log on application shutdown
@@ -949,17 +968,16 @@ void il2cpp_functions::Init() {
     Logger::get().debug("Assembly::GetAllAssemblies found? offset: %lX", ((intptr_t)Assembly_GetAllAssemblies) - getRealOffset(0));
     usleep(1000);  // 0.001s
 
+
     CRASH_UNLESS(shutdown);
+    // GC_free
     Instruction sd((const int32_t*)shutdown);
     auto* Runtime_Shutdown = CRASH_UNLESS(sd.label);
-    // // GC_free
-    // Instruction Runtime_Shutdown_inst(Runtime_Shutdown);
-    // auto blr = CRASH_UNLESS(Runtime_Shutdown_inst.findNth(1, std::mem_fn(&Instruction::isIndirectBranch)));
-    // auto j2GC_FF = CRASH_UNLESS(blr->findNthCall(5));  // BL(R)
-    // Instruction GC_FreeFixed(CRASH_UNLESS(j2GC_FF->label));
-    // GC_free = (decltype(GC_free))CRASH_UNLESS(GC_FreeFixed.label);
-    // Logger::get().debug("gc::GarbageCollector::FreeFixed found? offset: %lX", ((intptr_t)GC_free) - getRealOffset(0));
-    // usleep(1000);  // 0.001s
+
+    if (find_GC_free(Runtime_Shutdown)) {
+        Logger::get().debug("gc::GarbageCollector::FreeFixed found? offset: %lX", ((intptr_t)GC_free) - getRealOffset(0));
+        usleep(1000);  // 0.001s
+    }
 
     // il2cpp_defaults
     Instruction iu16((const int32_t*)init_utf16);
