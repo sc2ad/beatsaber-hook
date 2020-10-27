@@ -431,7 +431,7 @@ namespace il2cpp_utils {
     template<typename TOut = Il2CppObject*, typename... TArgs>
     // Creates a new object of the given class using the given constructor parameters
     // DOES NOT PERFORM ARGUMENT TYPE CHECKING! Uses the first .ctor with the right number of parameters it sees.
-    ::std::optional<TOut> NewUnsafe(Il2CppClass* klass, TArgs* ...args) {
+    ::std::optional<TOut> NewUnsafe(const Il2CppClass* klass, TArgs&& ...args) {
         il2cpp_functions::Init();
 
         // object_new call
@@ -651,8 +651,10 @@ namespace il2cpp_utils {
     /// @param obj The target instance
     /// @param callback The callback function_ptr_t
     /// @returns The created delegate
-    template<typename T = MulticastDelegate*, typename TObj = void, typename R, typename... TArgs>
-    T MakeDelegate(const Il2CppClass* delegateClass, TObj* obj, function_ptr_t<R, TArgs...> callback) {
+    template<typename T = MulticastDelegate*, typename TObj = Il2CppObject*, typename R, typename... TArgs>
+    T MakeDelegate(const Il2CppClass* delegateClass, TObj obj, function_ptr_t<R, TArgs...> callback) {
+        static_assert(std::is_pointer_v<TObj>, "TObj must be a pointer!");
+        static_assert(std::is_pointer_v<T>, "T must be a pointer!");
         /*
         * TODO: call PlatformInvoke::MarshalFunctionPointerToDelegate directly instead of copying code from it,
         * or at least use a cache like utils::NativeDelegateMethodCache::GetNativeDelegate(nativeFunctionPointer);
@@ -688,8 +690,8 @@ namespace il2cpp_utils {
     /// @param obj The target instance
     /// @param callback The callback function_ptr_t
     /// @returns The created delegate
-    template<typename T = MulticastDelegate*, typename TObj = void>
-    T MakeDelegate(const Il2CppClass* delegateClass, TObj* obj, void* callback) {
+    template<typename T = MulticastDelegate*, typename TObj = Il2CppObject*>
+    T MakeDelegate(const Il2CppClass* delegateClass, TObj obj, void* callback) {
         auto tmp = reinterpret_cast<function_ptr_t<void>>(callback);
         return MakeDelegate(delegateClass, obj, tmp);
     }
@@ -702,8 +704,8 @@ namespace il2cpp_utils {
     /// @param obj The target instance
     /// @param callback The callback function_ptr_t
     /// @returns The created delegate
-    template<typename T = MulticastDelegate*, typename TObj = void, typename R, typename... TArgs>
-    T MakeDelegate(const Il2CppType* actionType, TObj* obj, function_ptr_t<R, TArgs...> callback) {
+    template<typename T = MulticastDelegate*, typename TObj = Il2CppObject*, typename R, typename... TArgs>
+    T MakeDelegate(const Il2CppType* actionType, TObj obj, function_ptr_t<R, TArgs...> callback) {
         il2cpp_functions::Init();
         Il2CppClass* delegateClass = il2cpp_functions::class_from_il2cpp_type(actionType);
         return MakeDelegate(delegateClass, obj, callback);
@@ -717,8 +719,8 @@ namespace il2cpp_utils {
     /// @param obj The target instance
     /// @param callback The callback function
     /// @returns The created delegate
-    template<typename T = MulticastDelegate*, typename TObj = void>
-    T MakeDelegate(const Il2CppType* delegateType, TObj* obj, void* callback) {
+    template<typename T = MulticastDelegate*, typename TObj = Il2CppObject*>
+    T MakeDelegate(const Il2CppType* delegateType, TObj obj, void* callback) {
         auto tmp = reinterpret_cast<function_ptr_t<void>>(callback);
         return MakeDelegate(delegateType, obj, tmp);
     }
@@ -751,7 +753,7 @@ namespace il2cpp_utils {
     T MakeDelegate(FieldInfo* field, T1&& arg1, T2&& arg2) {
         il2cpp_functions::Init();
         auto* delegateType = RET_0_UNLESS(il2cpp_functions::field_get_type(field));
-        return MakeDelegate<T, void>(delegateType, arg1, arg2);
+        return MakeDelegate<T>(delegateType, arg1, arg2);
     }
 
     // Intializes an object (using the given args) fit to be passed to the given method at the given parameter index.
@@ -855,14 +857,6 @@ namespace il2cpp_utils {
     template<class None = void>
     void ExtractClassesNoArgs([[maybe_unused]] ::std::vector<const Il2CppClass*>& vec) {}
 
-    template<typename Ret, typename... TArgs>
-    ::std::vector<const Il2CppClass*> ExtractFromFunctionNoArgs() {
-        ::std::vector<const Il2CppClass*> vec(sizeof...(TArgs) + 1);
-        ExtractClassesNoArgs<TArgs...>(vec);
-        vec.push_back(classof(Ret));
-        return vec;
-    }
-
     template<typename... TArgs>
     ::std::vector<const Il2CppClass*> ExtractFromFunctionNoArgs() {
         ::std::vector<const Il2CppClass*> vec(sizeof...(TArgs));
@@ -878,6 +872,7 @@ namespace il2cpp_utils {
     template<typename T = MulticastDelegate*, typename Ret, typename... TArgs>
     T MakeFunc(function_ptr_t<Ret, TArgs...> lambda) {
         static_assert(sizeof...(TArgs) + 1 <= 16, "Cannot create a Func`<T1, T2, ..., TN> where N is > 16!");
+        static_assert(!std::is_same_v<Ret, void>, "Function used in ::il2cpp_utils::MakeFunc must have a non-void return!");
         // Get generic class with matching number of args
         static auto* genericClass = il2cpp_utils::GetClassFromName("System", "Func`" + ::std::to_string(sizeof...(TArgs) + 1));
         // Extract all parameter types and return types
@@ -885,7 +880,7 @@ namespace il2cpp_utils {
         // Instantiate the Func` type
         auto* instantiatedFunc = RET_DEFAULT_UNLESS(il2cpp_utils::MakeGeneric(genericClass, genericClasses));
         // Create the action from the instantiated Func` type
-        return il2cpp_utils::MakeDelegate<T>(instantiatedFunc, nullptr, lambda);
+        return il2cpp_utils::MakeDelegate<T>(instantiatedFunc, static_cast<Il2CppObject*>(nullptr), lambda);
     }
 
     /// @brief Creates and returns a C# System.Action<TArgs...> from the provided function_ptr_t.
@@ -902,7 +897,7 @@ namespace il2cpp_utils {
         // Instantiate the Func` type
         auto* instantiatedFunc = RET_DEFAULT_UNLESS(il2cpp_utils::MakeGeneric(genericClass, genericClasses));
         // Create the action from the instantiated Func` type
-        return il2cpp_utils::MakeDelegate<T>(instantiatedFunc, nullptr, lambda);
+        return il2cpp_utils::MakeDelegate<T>(instantiatedFunc, static_cast<Il2CppObject*>(nullptr), lambda);
     }
 }
 #endif /* IL2CPP_UTILS_H */
