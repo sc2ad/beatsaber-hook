@@ -846,16 +846,13 @@ namespace il2cpp_utils {
         return il2cpp_functions::runtime_invoke(method, reference, invokeParams, exc);
     }
 
-    template<typename T, typename... TArgs>
+    template<typename T = void, typename... TArgs>
     void ExtractClassesNoArgs(::std::vector<const Il2CppClass*>& vec) {
         vec.push_back(classof(T));
         if constexpr (sizeof...(TArgs) != 0) {
             ExtractClassesNoArgs<TArgs...>(vec);
         }
     }
-
-    template<class None = void>
-    void ExtractClassesNoArgs([[maybe_unused]] ::std::vector<const Il2CppClass*>& vec) {}
 
     template<typename... TArgs>
     ::std::vector<const Il2CppClass*> ExtractFromFunctionNoArgs() {
@@ -890,14 +887,19 @@ namespace il2cpp_utils {
     template<typename T = MulticastDelegate*, typename... TArgs>
     T MakeAction(function_ptr_t<void, TArgs...> lambda) {
         static_assert(sizeof...(TArgs) <= 16, "Cannot create an Action`<T1, T2, ..., TN> where N is > 16!");
-        // Get generic class with matching number of args
-        static auto* genericClass = il2cpp_utils::GetClassFromName("System", "Action`" + ::std::to_string(sizeof...(TArgs)));
-        // Extract all parameter types and return types
-        static auto genericClasses = ExtractFromFunctionNoArgs<TArgs...>();
-        // Instantiate the Func` type
-        auto* instantiatedFunc = RET_DEFAULT_UNLESS(il2cpp_utils::MakeGeneric(genericClass, genericClasses));
-        // Create the action from the instantiated Func` type
-        return il2cpp_utils::MakeDelegate<T>(instantiatedFunc, static_cast<Il2CppObject*>(nullptr), lambda);
+        if constexpr (sizeof...(TArgs) != 0) {
+            // Get generic class with matching number of args
+            static auto* genericClass = il2cpp_utils::GetClassFromName("System", "Action`" + ::std::to_string(sizeof...(TArgs)));
+            // Extract all parameter types and return types
+            static auto genericClasses = ExtractFromFunctionNoArgs<TArgs...>();
+            // Instantiate the Func` type
+            auto* instantiatedFunc = RET_DEFAULT_UNLESS(il2cpp_utils::MakeGeneric(genericClass, genericClasses));
+            // Create the action from the instantiated Func` type
+            return il2cpp_utils::MakeDelegate<T>(instantiatedFunc, static_cast<Il2CppObject*>(nullptr), lambda);
+        } else {
+            static auto* klass = il2cpp_utils::GetClassFromName("System", "Action");
+            return il2cpp_utils::MakeDelegate<T>(klass, static_cast<Il2CppObject*>(nullptr), lambda);
+        }
     }
 }
 #endif /* IL2CPP_UTILS_H */
