@@ -28,6 +28,18 @@ public:
     Configuration(const ModInfo& info_) : info(info_) {
         filePath = Configuration::getConfigFilePath(info_);
     }
+    Configuration(Configuration&& other) :
+        info(std::move(other.info)),
+        filePath(std::move(other.filePath))
+    {
+        config.Swap(other.config);
+    }
+    Configuration(const Configuration& other) :
+        info(other.info),
+        filePath(other.filePath)
+    {
+        config.CopyFrom(other.config, config.GetAllocator());
+    }
     // Loads JSON config
     void Load();
     // Reloads JSON config

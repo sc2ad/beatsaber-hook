@@ -802,7 +802,7 @@ namespace il2cpp_utils {
     MulticastDelegate* MakeFunc(::std::function<Ret(TArgs...)> lambda) {
         static_assert(sizeof...(TArgs) <= 16, "Cannot create a Func`<T1, T2, ..., TN> where N is > 16!");
         // Get generic class with matching number of args
-        static auto* genericClass = il2cpp_utils::GetClassFromName("System", "Func`" + ::std::to_string(sizeof...(TArgs)));
+        static auto* genericClass = il2cpp_utils::GetClassFromName("System", "Func`" + ::std::to_string(sizeof...(TArgs) + 1));
         // Extract all parameter types and return types
         static auto genericClasses = ExtractFromFunctionNoArgs<Ret, TArgs...>();
         // Instantiate the Func` type
