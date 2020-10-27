@@ -922,24 +922,24 @@ namespace il2cpp_utils {
     }
 
     // Contains the set of created delegates
-    std::unordered_set<Delegate*> delegates;
+    std::unordered_set<void*> delegates;
 
     void ClearDelegates() {
         for (auto itr : delegates) {
-            free(itr->original_method_info);
+            free(reinterpret_cast<Delegate*>(itr)->original_method_info);
         }
         delegates.clear();
     }
 
-    void ClearDelegate(Delegate* delegate) {
+    void ClearDelegate(void* delegate) {
         auto itr = delegates.find(delegate);
         if (itr != delegates.end()) {
-            free((*itr)->original_method_info);
+            free(reinterpret_cast<Delegate*>(*itr)->original_method_info);
             delegates.erase(itr);
         }
     }
 
-    void AddAllocatedDelegate(Delegate* delegate) {
+    void AddAllocatedDelegate(void* delegate) {
         delegates.insert(delegate);
     }
 }

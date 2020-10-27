@@ -637,12 +637,12 @@ namespace il2cpp_utils {
 
     /// @brief Clears the specified delegate.
     /// @param delegate The Delegate* to clear the allocated MethodInfo* from, if it exists
-    void ClearDelegate(Delegate* delegate);
+    void ClearDelegate(void* delegate);
 
     /// @brief Adds the allocated Delegate* to the set of mapped delegates.
     /// @param delegate The Delegate* to add
     /// @remarks See ClearDelegates() and ClearDelegate(Delegate* delegate)
-    void AddAllocatedDelegate(Delegate* delegate);
+    void AddAllocatedDelegate(void* delegate);
 
     /// @brief Creates a delegate of return type T, with target TObj, using the provided Il2CppClass*
     /// @tparam T The type to return
