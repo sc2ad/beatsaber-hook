@@ -58,14 +58,14 @@ const PropertyInfo* (*il2cpp_functions::class_get_properties)(Il2CppClass * klas
 const PropertyInfo* (*il2cpp_functions::class_get_property_from_name)(Il2CppClass * klass, const char *name);
 FieldInfo* (*il2cpp_functions::class_get_field_from_name)(Il2CppClass * klass, const char *name);
 const MethodInfo* (*il2cpp_functions::class_get_methods)(Il2CppClass * klass, void* *iter);
-const MethodInfo* (*il2cpp_functions::class_get_method_from_name)(Il2CppClass * klass, const char* name, int argsCount);
-const char* (*il2cpp_functions::class_get_name)(Il2CppClass * klass);
+const MethodInfo* (*il2cpp_functions::class_get_method_from_name)(const Il2CppClass * klass, const char* name, int argsCount);
+const char* (*il2cpp_functions::class_get_name)(const Il2CppClass * klass);
 #ifdef UNITY_2019
 void (*il2cpp_functions::type_get_name_chunked)(const Il2CppType * type, void(*chunkReportFunc)(void* data, void* userData), void* userData);
 #endif
-const char* (*il2cpp_functions::class_get_namespace)(Il2CppClass * klass);
+const char* (*il2cpp_functions::class_get_namespace)(const Il2CppClass * klass);
 Il2CppClass* (*il2cpp_functions::class_get_parent)(Il2CppClass * klass);
-Il2CppClass* (*il2cpp_functions::class_get_declaring_type)(Il2CppClass * klass);
+Il2CppClass* (*il2cpp_functions::class_get_declaring_type)(const Il2CppClass * klass);
 int32_t (*il2cpp_functions::class_instance_size)(Il2CppClass * klass);
 size_t (*il2cpp_functions::class_num_fields)(const Il2CppClass * enumKlass);
 bool (*il2cpp_functions::class_is_valuetype)(const Il2CppClass * klass);

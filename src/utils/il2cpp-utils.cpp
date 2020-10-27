@@ -39,12 +39,12 @@ namespace std
 // TODO: Make this into a static class
 namespace il2cpp_utils {
     // decltype is static so this should make the hashmap use as little memory as needed regardless of il2cpp changes
-    static std::unordered_map<std::pair<Il2CppClass*, std::pair<std::string, decltype(MethodInfo::parameters_count)>>, const MethodInfo*, hash_pair_3> classesNamesToMethodsCache;
+    static std::unordered_map<std::pair<const Il2CppClass*, std::pair<std::string, decltype(MethodInfo::parameters_count)>>, const MethodInfo*, hash_pair_3> classesNamesToMethodsCache;
 
     typedef std::pair<std::string, std::vector<const Il2CppType*>> classesNamesTypesInnerPairType;
-    static std::unordered_map<std::pair<Il2CppClass*, classesNamesTypesInnerPairType>, const MethodInfo*, hash_pair_3> classesNamesTypesToMethodsCache;
-    static std::unordered_map<std::pair<Il2CppClass*, std::string>, FieldInfo*, hash_pair> classesNamesToFieldsCache;
-    static std::unordered_map<std::pair<Il2CppClass*, std::string>, const PropertyInfo*, hash_pair> classesNamesToPropertiesCache;
+    static std::unordered_map<std::pair<const Il2CppClass*, classesNamesTypesInnerPairType>, const MethodInfo*, hash_pair_3> classesNamesTypesToMethodsCache;
+    static std::unordered_map<std::pair<const Il2CppClass*, std::string>, FieldInfo*, hash_pair> classesNamesToFieldsCache;
+    static std::unordered_map<std::pair<const Il2CppClass*, std::string>, const PropertyInfo*, hash_pair> classesNamesToPropertiesCache;
     // Maximum length of characters of an exception message - 1
     #define EXCEPTION_MESSAGE_SIZE 4096
 
@@ -69,12 +69,14 @@ namespace il2cpp_utils {
 
     const Il2CppType* MakeRef(const Il2CppType* type) {
         if (type->byref) return type;
+        il2cpp_functions::Init();
         // could use Class::GetByrefType instead of &->this_arg but it does the same thing
         return &il2cpp_functions::class_from_il2cpp_type(type)->this_arg;
     }
 
     const Il2CppType* UnRef(const Il2CppType* type) {
         if (!type->byref) return type;
+        il2cpp_functions::Init();
         return il2cpp_functions::class_get_type(il2cpp_functions::class_from_il2cpp_type(type));
     }
 
@@ -94,6 +96,7 @@ namespace il2cpp_utils {
                 }
             }
         }
+        il2cpp_functions::Init();
         auto classTo = il2cpp_functions::class_from_il2cpp_type(to);
         auto classFrom = il2cpp_functions::class_from_il2cpp_type(from);
         Logger::get().debug("IsConvertible: class_is_assignable_from(%s, %s)",
@@ -185,13 +188,13 @@ namespace il2cpp_utils {
             (klass->byval_arg.type == IL2CPP_TYPE_MVAR);
     }
 
-    const MethodInfo* FindMethodUnsafe(Il2CppClass* klass, std::string_view methodName, int argsCount) {
+    const MethodInfo* FindMethodUnsafe(const Il2CppClass* klass, std::string_view methodName, int argsCount) {
         il2cpp_functions::Init();
         RET_0_UNLESS(klass);
 
         // Check Cache
         auto innerPair = std::pair<std::string, decltype(MethodInfo::parameters_count)>(methodName, argsCount);
-        auto key = std::pair<Il2CppClass*, decltype(innerPair)>(klass, innerPair);
+        auto key = std::pair<const Il2CppClass*, decltype(innerPair)>(klass, innerPair);
         auto itr = classesNamesToMethodsCache.find(key);
         if (itr != classesNamesToMethodsCache.end()) {
             return itr->second;
@@ -201,7 +204,7 @@ namespace il2cpp_utils {
         if (!methodInfo) {
             Logger::get().error("could not find method %s with %i parameters in class '%s'!", methodName.data(), argsCount,
                 ClassStandardName(klass).c_str());
-            LogMethods(klass, true);
+            LogMethods(const_cast<Il2CppClass*>(klass), true);
         }
         classesNamesToMethodsCache.emplace(key, methodInfo);
         return methodInfo;
@@ -212,6 +215,7 @@ namespace il2cpp_utils {
     }
 
     const MethodInfo* FindMethodUnsafe(Il2CppObject* instance, std::string_view methodName, int argsCount) {
+        il2cpp_functions::Init();
         auto klass = RET_0_UNLESS(il2cpp_functions::object_get_class(instance));
         return FindMethodUnsafe(klass, methodName, argsCount);
     }
@@ -228,6 +232,7 @@ namespace il2cpp_utils {
     std::vector<const Il2CppType*> TypesFrom(std::vector<const Il2CppClass*> classes) { return ClassVecToTypes(classes); }
     std::vector<const Il2CppType*> TypesFrom(std::vector<std::string_view> strings) {
         std::vector<const Il2CppType*> types;
+        il2cpp_functions::Init();
         for (size_t i = 0; i < strings.size() - 1; i += 2) {
             auto clazz = GetClassFromName(strings[i].data(), strings[i+1].data());
             types.push_back(il2cpp_functions::class_get_type(clazz));
@@ -429,6 +434,7 @@ namespace il2cpp_utils {
     }
 
     Il2CppReflectionType* GetSystemType(const Il2CppType* typ) {
+        il2cpp_functions::Init();
         return reinterpret_cast<Il2CppReflectionType*>(il2cpp_functions::type_get_object(typ));
     }
 
@@ -573,7 +579,8 @@ namespace il2cpp_utils {
         }
     }
 
-    std::string ClassStandardName(Il2CppClass* klass, bool generics) {
+    std::string ClassStandardName(const Il2CppClass* klass, bool generics) {
+        il2cpp_functions::Init();
         std::stringstream ss;
         const char* namespaze = il2cpp_functions::class_get_namespace(klass);
         auto* declaring = il2cpp_functions::class_get_declaring_type(klass);
@@ -600,6 +607,7 @@ namespace il2cpp_utils {
             return ClassStandardName(genClass->cached_class);
         }
         if (genClass->typeDefinitionIndex != kTypeDefinitionIndexInvalid) {
+            il2cpp_functions::Init();
             auto* klass = il2cpp_functions::GenericClass_GetClass(genClass);
             return ClassStandardName(klass);
         }
@@ -609,7 +617,10 @@ namespace il2cpp_utils {
     void LogMethods(Il2CppClass* klass, bool logParents) {
         RET_V_UNLESS(klass);
 
-        if (klass->name) il2cpp_functions::Class_Init(klass);
+        if (klass->name) {
+            il2cpp_functions::Init();
+            il2cpp_functions::Class_Init(klass);
+        }
         if (klass->method_count && !(klass->methods)) {
             Logger::get().warning("Class is valid and claims to have methods but ->methods is null! class name: %s", ClassStandardName(klass).c_str());
             return;
@@ -753,6 +764,7 @@ namespace il2cpp_utils {
 
     static std::unordered_map<Il2CppClass*, std::map<std::string, Il2CppGenericClass*, doj::alphanum_less<std::string>>> classToGenericClassMap;
     void BuildGenericsMap() {
+        il2cpp_functions::Init();
         auto* metadataReg = RET_V_UNLESS(*il2cpp_functions::s_Il2CppMetadataRegistrationPtr);
         Logger::get().debug("metadataReg: %p, offset = %lX", metadataReg, ((intptr_t)metadataReg) - getRealOffset(0));
 
@@ -841,6 +853,7 @@ namespace il2cpp_utils {
     }
 
     void AddTypeToNametoClassHashTable(const Il2CppImage* img, TypeDefinitionIndex index) {
+        il2cpp_functions::Init();
         const Il2CppTypeDefinition* typeDefinition = il2cpp_functions::MetadataCache_GetTypeDefinitionFromIndex(index);
         // don't add nested types
         if (typeDefinition->declaringTypeIndex != kTypeIndexInvalid)
@@ -853,6 +866,7 @@ namespace il2cpp_utils {
     }
 
     void AddNestedTypesToNametoClassHashTable(const Il2CppImage* img, const Il2CppTypeDefinition* typeDefinition) {
+        il2cpp_functions::Init();
         for (int i = 0; i < typeDefinition->nested_type_count; ++i) {
             Il2CppClass *klass = il2cpp_functions::MetadataCache_GetNestedTypeFromIndex(typeDefinition->nestedTypesStart + i);
             AddNestedTypesToNametoClassHashTable(img->nameToClassHashTable, il2cpp_functions::MetadataCache_GetStringFromIndex(typeDefinition->namespaceIndex), il2cpp_functions::MetadataCache_GetStringFromIndex(typeDefinition->nameIndex), klass);
@@ -860,6 +874,7 @@ namespace il2cpp_utils {
     }
 
     void AddNestedTypesToNametoClassHashTable(Il2CppNameToTypeDefinitionIndexHashTable* hashTable, const char *namespaze, const std::string& parentName, Il2CppClass *klass) {
+        il2cpp_functions::Init();
         std::string name = parentName + "/" + klass->name;
         char *pName = (char*)calloc(name.size() + 1, sizeof(char));
         strcpy(pName, name.c_str());
@@ -872,9 +887,8 @@ namespace il2cpp_utils {
     }
 
     Il2CppString* createcsstr(std::string_view inp, StringType type) {
+        il2cpp_functions::Init();
         switch (type) {
-            case Permanent:
-                return il2cpp_functions::string_new_len(inp.data(), static_cast<uint32_t>(inp.length()));
             case Manual: {
                 il2cpp_functions::CheckS_GlobalMetadata();
                 auto mallocSize = sizeof(Il2CppString) + sizeof(Il2CppChar) * inp.length();
@@ -886,7 +900,7 @@ namespace il2cpp_utils {
             }
             default:
                 // Get ASCII Encoding
-                auto enc = RET_0_UNLESS(GetPropertyValue("System.Text", "Encoding", "ASCII"));
+                static auto enc = RET_0_UNLESS(GetPropertyValue("System.Text", "Encoding", "ASCII"));
                 // Create new string, created from the literal char*, not to be confused with a copy of this data
                 auto* obj = RET_0_UNLESS(RunMethod<Il2CppString*>("System", "String", "CreateStringFromEncoding", (uint8_t*)inp.data(), (int)inp.length(), enc));
                 return obj;

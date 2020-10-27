@@ -200,6 +200,7 @@ namespace il2cpp_utils {
                 using element_arg_class = il2cpp_no_arg_class<T>;
                 if constexpr (has_get<element_arg_class>) {
                     Il2CppClass* elementClass = element_arg_class::get();
+                    il2cpp_functions::Init();
                     return il2cpp_functions::Class_GetPtrClass(elementClass);
                 }
                 if (arg) {
@@ -244,6 +245,7 @@ namespace il2cpp_utils {
                 }
                 auto* genInst = il2cpp_utils::MakeGeneric(genTemplate, {il2cpp_no_arg_class<TArgs>::get()...});
                 if (isStruct) {
+                    il2cpp_functions::Init();
                     return il2cpp_functions::Class_GetPtrClass(genInst);
                 }
                 return genInst;

@@ -44,7 +44,7 @@ namespace il2cpp_utils {
     Il2CppReflectionType* GetSystemType(::std::string_view nameSpace, ::std::string_view className);
 
     // Gets the standard class name of an Il2CppClass*
-    ::std::string ClassStandardName(Il2CppClass* klass, bool generics = true);
+    ::std::string ClassStandardName(const Il2CppClass* klass, bool generics = true);
 
     // Gets a C# name of a type
     const char* TypeGetSimpleName(const Il2CppType* type);
@@ -138,6 +138,7 @@ namespace il2cpp_utils {
     template<class T>
     const Il2CppType* ExtractIndependentType() {
         auto* klass = RET_0_UNLESS(NoArgClass<T>());
+        il2cpp_functions::Init();
         return il2cpp_functions::class_get_type(klass);
     }
 
@@ -149,7 +150,7 @@ namespace il2cpp_utils {
 
     // Returns the MethodInfo for the method on the given class with the given name and number of arguments
     // Created by zoller27osu
-    const MethodInfo* FindMethodUnsafe(Il2CppClass* klass, ::std::string_view methodName, int argsCount);
+    const MethodInfo* FindMethodUnsafe(const Il2CppClass* klass, ::std::string_view methodName, int argsCount);
     const MethodInfo* FindMethodUnsafe(Il2CppObject* instance, ::std::string_view methodName, int argsCount);
     const MethodInfo* FindMethodUnsafe(::std::string_view nameSpace, ::std::string_view className, ::std::string_view methodName, int argsCount);
 
@@ -311,6 +312,7 @@ namespace il2cpp_utils {
         void* inst = ExtractValue(instance);  // null is allowed (for T = Il2CppType* or Il2CppClass*)
         Il2CppException* exp = nullptr;
         auto invokeParamsVec = ExtractValues(params...);
+        il2cpp_functions::Init();
         auto* ret = il2cpp_functions::runtime_invoke(method, inst, invokeParamsVec.data(), &exp);
 
         // Check if the TOut that the user requested makes sense given the Il2CppObject* we actually got
@@ -572,8 +574,6 @@ namespace il2cpp_utils {
     // Wrapper for FindProperty taking an instance to extract the Il2CppClass* from
     template<class T>
     const PropertyInfo* FindProperty(T&& instance, ::std::string_view propertyName) {
-        il2cpp_functions::Init();
-
         auto* klass = RET_0_UNLESS(ExtractClass(instance));
         return FindProperty(klass, propertyName);
     }
@@ -704,6 +704,7 @@ namespace il2cpp_utils {
     /// @returns The created delegate
     template<typename T = MulticastDelegate*, typename TObj = void, typename R, typename... TArgs>
     T MakeDelegate(const Il2CppType* actionType, TObj* obj, function_ptr_t<R, TArgs...> callback) {
+        il2cpp_functions::Init();
         Il2CppClass* delegateClass = il2cpp_functions::class_from_il2cpp_type(actionType);
         return MakeDelegate(delegateClass, obj, callback);
     }
@@ -733,6 +734,7 @@ namespace il2cpp_utils {
     /// @returns The created delegate
     template<typename T = MulticastDelegate*, typename T1, typename T2>
     T MakeDelegate(const MethodInfo* method, int paramIdx, T1&& arg1, T2&& arg2) {
+        il2cpp_functions::Init();
         auto* delegateType = RET_0_UNLESS(il2cpp_functions::method_get_param(method, paramIdx));
         return MakeDelegate<T>(delegateType, arg1, arg2);
     }
@@ -747,6 +749,7 @@ namespace il2cpp_utils {
     /// @returns The created delegate
     template<typename T = MulticastDelegate*, typename T1, typename T2>
     T MakeDelegate(FieldInfo* field, T1&& arg1, T2&& arg2) {
+        il2cpp_functions::Init();
         auto* delegateType = RET_0_UNLESS(il2cpp_functions::field_get_type(field));
         return MakeDelegate<T, void>(delegateType, arg1, arg2);
     }
@@ -808,8 +811,7 @@ namespace il2cpp_utils {
 
     enum StringType {
         Temporary,  // string is normal C# object, may be GC'd
-        Manual,     // string is owned by C++, must be manually freed
-        Permanent   // string can never be freed/deleted
+        Manual,     // string is owned by C++, must be manually freed (use this for string constants as well)
     };
 
     /// @brief Creates a new C# string and registers it with GC. Copies the input string.
@@ -844,7 +846,7 @@ namespace il2cpp_utils {
 
     template<typename T, typename... TArgs>
     void ExtractClassesNoArgs(::std::vector<const Il2CppClass*>& vec) {
-        vec.push_front(classof(T));
+        vec.push_back(classof(T));
         if constexpr (sizeof...(TArgs) != 0) {
             ExtractClassesNoArgs<TArgs...>(vec);
         }
@@ -891,7 +893,7 @@ namespace il2cpp_utils {
     /// @tparam TArgs The arguments of the function
     /// @returns The created System.Action<TArgs...>. Null if it could not be created.
     template<typename T = MulticastDelegate*, typename... TArgs>
-    T _MakeAction(function_ptr_t<void, TArgs...> lambda) {
+    T MakeAction(function_ptr_t<void, TArgs...> lambda) {
         static_assert(sizeof...(TArgs) <= 16, "Cannot create an Action`<T1, T2, ..., TN> where N is > 16!");
         // Get generic class with matching number of args
         static auto* genericClass = il2cpp_utils::GetClassFromName("System", "Action`" + ::std::to_string(sizeof...(TArgs)));

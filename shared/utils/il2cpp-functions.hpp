@@ -106,14 +106,14 @@ class il2cpp_functions {
     static const PropertyInfo* (*class_get_property_from_name)(Il2CppClass * klass, const char *name);
     static FieldInfo* (*class_get_field_from_name)(Il2CppClass * klass, const char *name);
     static const MethodInfo* (*class_get_methods)(Il2CppClass * klass, void* *iter);
-    static const MethodInfo* (*class_get_method_from_name)(Il2CppClass * klass, const char* name, int argsCount);
-    static const char* (*class_get_name)(Il2CppClass * klass);
+    static const MethodInfo* (*class_get_method_from_name)(const Il2CppClass * klass, const char* name, int argsCount);
+    static const char* (*class_get_name)(const Il2CppClass * klass);
     #ifdef UNITY_2019
     static void (*type_get_name_chunked)(const Il2CppType * type, void(*chunkReportFunc)(void* data, void* userData), void* userData);
     #endif
-    static const char* (*class_get_namespace)(Il2CppClass * klass);
+    static const char* (*class_get_namespace)(const Il2CppClass * klass);
     static Il2CppClass* (*class_get_parent)(Il2CppClass * klass);
-    static Il2CppClass* (*class_get_declaring_type)(Il2CppClass * klass);
+    static Il2CppClass* (*class_get_declaring_type)(const Il2CppClass * klass);
     static int32_t (*class_instance_size)(Il2CppClass * klass);
     static size_t (*class_num_fields)(const Il2CppClass * enumKlass);
     static bool (*class_is_valuetype)(const Il2CppClass * klass);
