@@ -248,7 +248,9 @@ std::string to_utf8(std::u16string_view view) {
         return static_cast<char>(utf16_char);
     });
     dat[view.length()] = '\0';
-    return {dat};
+    std::string out(dat);
+    free(dat);
+    return out;
 }
 
 std::u16string to_utf16(std::string_view view) {
@@ -257,7 +259,9 @@ std::u16string to_utf16(std::string_view view) {
         return static_cast<char16_t>(standardChar);
     });
     dat[view.length()] = '\0';
-    return {dat};
+    std::u16string out(dat);
+    free(dat);
+    return out;
 }
 
 std::u16string_view csstrtostr(Il2CppString* in)
