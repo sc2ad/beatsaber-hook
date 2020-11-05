@@ -252,7 +252,7 @@ std::string to_utf8(std::u16string_view view) {
 }
 
 std::u16string to_utf16(std::string_view view) {
-    char16_t* dat = static_cast<char*>(calloc(view.length() + 1, sizeof(char16_t)));
+    char16_t* dat = static_cast<char16_t*>(calloc(view.length() + 1, sizeof(char16_t)));
     std::transform(view.data(), view.data() + view.size(), dat, [](auto standardChar) {
         return static_cast<char16_t>(standardChar);
     });
