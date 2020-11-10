@@ -1004,13 +1004,15 @@ void il2cpp_functions::Init() {
     usleep(1000);  // 0.001s
     Logger::get().debug("All global constants found!");
 
+    // NOTE: Runtime.Shutdown is NOT CALLED even for exceptions!
+    // There is practically no use in hooking this becuase of that.
     // Runtime.Shutdown (for file loggers)
-    if (Runtime_Shutdown) {
-        Logger::get().info("hook installing to: %p (offset %lX)", Runtime_Shutdown, ((intptr_t)Runtime_Shutdown) - getRealOffset(0));
-        INSTALL_HOOK_DIRECT(shutdown_hook, Runtime_Shutdown);
-    } else {
-        Logger::get().critical("Failed to parse il2cpp_shutdown's implementation address! Could not install shutdown hook for closing file logs.");
-    }
+    // if (Runtime_Shutdown) {
+    //     Logger::get().info("hook installing to: %p (offset %lX)", Runtime_Shutdown, ((intptr_t)Runtime_Shutdown) - getRealOffset(0));
+    //     INSTALL_HOOK_DIRECT(shutdown_hook, Runtime_Shutdown);
+    // } else {
+    //     Logger::get().critical("Failed to parse il2cpp_shutdown's implementation address! Could not install shutdown hook for closing file logs.");
+    // }
 
     dlclose(imagehandle);
     initialized = true;
