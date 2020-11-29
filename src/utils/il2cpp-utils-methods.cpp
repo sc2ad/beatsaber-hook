@@ -277,7 +277,6 @@ namespace il2cpp_utils {
         static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("IsConvertible");
         RET_0_UNLESS(logger, to);
         RET_0_UNLESS(logger, from);
-        logger.debug("IsConvertible(%s, %s)", TypeGetSimpleName(to), TypeGetSimpleName(from));
         if (asArgs) {
             if (to->byref) {
                 if (!from->byref) {
@@ -293,8 +292,6 @@ namespace il2cpp_utils {
         il2cpp_functions::Init();
         auto classTo = il2cpp_functions::class_from_il2cpp_type(to);
         auto classFrom = il2cpp_functions::class_from_il2cpp_type(from);
-        logger.debug("class_is_assignable_from(%s, %s)",
-                ClassStandardName(classTo).c_str(), ClassStandardName(classFrom).c_str());
         bool ret = (to->type == IL2CPP_TYPE_MVAR) || il2cpp_functions::class_is_assignable_from(classTo, classFrom);
         if (!ret) {
             logger.debug("class_is_assignable_from(%s, %s) returned %s",

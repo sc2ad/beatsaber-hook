@@ -71,7 +71,9 @@ namespace il2cpp_utils {
         using arg_class = il2cpp_type_check::il2cpp_arg_class<Dt>;
         static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("ExtractClass");
         Il2CppClass* klass = arg_class::get(arg);
-        logger.error("Failed to determine class! Tips: instead of nullptr, pass the Il2CppType* or Il2CppClass* of the argument instead!");
+        if (!klass) {
+            logger.error("Failed to determine class! Tips: instead of nullptr, pass the Il2CppType* or Il2CppClass* of the argument instead!");
+        }
         return THROW_OR_RET_NULL(logger, klass);
     }
 
