@@ -98,6 +98,18 @@ class Logger {
             emplace_safe(buffer);
         }
         Logger(const ModInfo info) : Logger(info, LoggerOptions{false, false}) {}
+        ~Logger() {
+            auto match = &buffer;
+            bufferMutex.lock();
+            // Remove ourselves
+            for (auto itr = buffers.begin(); itr != buffers.end(); ++itr) {
+                if (*itr == match) {
+                    buffers.erase(itr);
+                    break;
+                }
+            }
+            bufferMutex.unlock();
+        }
         void log(Logging::Level lvl, std::string str);
         void log(Logging::Level lvl, std::string_view fmt, ...);
         void critical(std::string_view fmt, ...);
@@ -159,6 +171,9 @@ class Logger {
         std::mutex contextMutex;
         std::string tag;
         const ModInfo modInfo;
+        // TODO: Each Logger instance is responsible for their own buffer.
+        // This means that if a logger instance is disposed (for whatever reason) it needs to clear its buffer pointer from the buffers list.
+        // This is done in the destructor, but for all intents and purposes, it doesn't need to happen at all.
         LoggerBuffer buffer;
         static bool consumerStarted;
         static std::list<LoggerBuffer*> buffers;
