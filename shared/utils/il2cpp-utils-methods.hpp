@@ -69,39 +69,6 @@ namespace il2cpp_utils {
         return il2cpp_functions::value_box(klass, &arg);
     }
 
-    template<class TOut>
-    ::std::optional<TOut> FromIl2CppObject(Il2CppObject* obj) {
-        il2cpp_functions::Init();
-
-        // using Dt = ::std::decay_t<TOut>;
-        void* val = obj;
-        // nullptr (which runtime_invoke returns for "void" return type!) is different from nullopt (a runtime_invoke error!)
-        if (obj && il2cpp_functions::class_is_valuetype(il2cpp_functions::object_get_class(obj))) {
-            static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("FromIl2CppObject");
-            val = RET_NULLOPT_UNLESS(logger, il2cpp_functions::object_unbox(obj));
-        }
-        if constexpr (::std::is_pointer_v<TOut>) {
-            return static_cast<TOut>(val);
-        } else {
-            return *static_cast<TOut*>(val);
-        }
-    }
-
-    template<class T>
-    bool FromIl2CppObject(Il2CppObject* obj, T& out) {
-        using Dt = ::std::decay_t<T>;
-        if (auto ret = FromIl2CppObject<Dt>(obj)) {
-            if constexpr (::std::is_pointer_v<Dt>) {
-                // if they asked for the output in a pointer, we shouldn't change the pointer itself
-                *out = *(*ret);
-            } else {
-                out = *ret;
-            }
-            return true;
-        }
-        return false;
-    }
-
     template<class T>
     void* ExtractValue(T&& arg) {
         il2cpp_functions::Init();
@@ -381,6 +348,62 @@ namespace il2cpp_utils {
         static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethodUnsafe");
         auto* klass = RET_NULLOPT_UNLESS(logger, GetClassFromName(nameSpace, klassName));
         return RunMethodUnsafe<TOut>(klass, methodName, params...);
+    }
+
+    template<typename TOut = Il2CppObject*, typename... TArgs>
+    // Creates a new object of the given class using the given constructor parameters
+    // Will only run a .ctor whose parameter types match the given arguments.
+    ::std::optional<TOut> New(Il2CppClass* klass, TArgs&& ...args) {
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("New");
+        il2cpp_functions::Init();
+
+        // object_new call
+        Il2CppObject* obj = RET_NULLOPT_UNLESS(logger, il2cpp_functions::object_new(klass));
+        // runtime_invoke constructor with right type(s) of arguments, return null if constructor errors
+        RET_NULLOPT_UNLESS(logger, RunMethod(obj, ".ctor", args...));
+        return FromIl2CppObject<TOut>(obj);
+    }
+
+    template<typename TOut = Il2CppObject*, typename... TArgs>
+    // Creates a new object of the given class using the given constructor parameters
+    // DOES NOT PERFORM ARGUMENT TYPE CHECKING! Uses the first .ctor with the right number of parameters it sees.
+    ::std::optional<TOut> NewUnsafe(const Il2CppClass* klass, TArgs&& ...args) {
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("NewUnsafe");
+        il2cpp_functions::Init();
+
+        // object_new call
+        Il2CppObject* obj = RET_NULLOPT_UNLESS(logger, il2cpp_functions::object_new(klass));
+        // runtime_invoke constructor with right number of args, return null if constructor errors
+        RET_NULLOPT_UNLESS(logger, RunMethodUnsafe(obj, ".ctor", args...));
+        return FromIl2CppObject<TOut>(obj);
+    }
+
+    template<typename TOut = Il2CppObject*, typename... TArgs>
+    // Creates a new object of the returned type using the given constructor parameters
+    // Will only run a .ctor whose parameter types match the given arguments.
+    ::std::enable_if_t<(... && (!::std::is_convertible_v<Il2CppClass*, TArgs> && !::std::is_convertible_v<TArgs, ::std::string_view>)),
+    ::std::optional<TOut>> New(TArgs&& ...args) {
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("New");
+        auto* klass = RET_NULLOPT_UNLESS(logger, (NoArgClass<TOut, true>()));
+        return New<TOut>(klass, args...);
+    }
+
+    template<typename TOut = Il2CppObject*, typename... TArgs>
+    // Creates a new object of the class with the given nameSpace and className using the given constructor parameters.
+    // Will only run a .ctor whose parameter types match the given arguments.
+    ::std::optional<TOut> New(::std::string_view nameSpace, ::std::string_view className, TArgs&& ...args) {
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("New");
+        auto* klass = RET_0_UNLESS(logger, GetClassFromName(nameSpace, className));
+        return New<TOut>(klass, args...);
+    }
+
+    template<typename TOut = Il2CppObject*, typename... TArgs>
+    // Creates a new object of the class with the given nameSpace and className using the given constructor parameters.
+    // DOES NOT PERFORM ARGUMENT TYPE CHECKING! Uses the first .ctor with the right number of parameters it sees.
+    ::std::optional<TOut> NewUnsafe(::std::string_view nameSpace, ::std::string_view className, TArgs* ...args) {
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("NewUnsafe");
+        auto* klass = RET_0_UNLESS(logger, GetClassFromName(nameSpace, className));
+        return NewUnsafe<TOut>(klass, args...);
     }
 }
 

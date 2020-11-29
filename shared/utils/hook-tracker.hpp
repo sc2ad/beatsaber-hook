@@ -24,7 +24,7 @@ struct HookTracker {
     /// @brief Calls AddHook
     template<typename... TArgs>
     static void AddHook(TArgs&&... args) {
-        AddHook(HookInfo(std::forward(args)...));
+        AddHook(HookInfo(std::forward<TArgs>(args)...));
     }
     /// @brief Stops tracking the provided HookInfo.
     /// @param info The HookInfo to stop tracking.
@@ -32,7 +32,7 @@ struct HookTracker {
     /// @brief Calls RemoveHook
     template<typename... TArgs>
     static void RemoveHook(TArgs&&... args) {
-        RemoveHook(HookInfo(std::forward(args)...));
+        RemoveHook(HookInfo(std::forward<TArgs>(args)...));
     }
     /// @brief Stop tracking all hooks.
     static void RemoveHooks();
