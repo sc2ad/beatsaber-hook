@@ -382,7 +382,7 @@ static bool find_GC_free(const int32_t* Runtime_Shutdown) {
     if (sigMatch && !multipleMatches) {
         il2cpp_functions::GC_free = (decltype(il2cpp_functions::GC_free))sigMatch;
     } else {
-        static auto logger = Logger::get().WithContext("il2cpp_functions").WithContext("find_GC_free");
+        static auto& logger = Logger::get().WithContext("il2cpp_functions").WithContext("find_GC_free");
         // xref tracing __WILL__ fail if Runtime_Shutdown is hooked by __ANY__ lib/mod, such as another bs-hook's file logger.
         Instruction Runtime_Shutdown_inst(Runtime_Shutdown);
         auto blr = RET_0_UNLESS(logger, Runtime_Shutdown_inst.findNth(1, std::mem_fn(&Instruction::isIndirectBranch)));
@@ -406,7 +406,7 @@ void il2cpp_functions::Init() {
     if (initialized) {
         return;
     }
-    static auto logger = Logger::get().WithContext("il2cpp_functions").WithContext("Init");
+    static auto& logger = Logger::get().WithContext("il2cpp_functions").WithContext("Init");
     logger.info("il2cpp_functions: Init: Initializing all IL2CPP Functions...");
     dlerror();  // clears existing errors
     auto path = Modloader::getLibIl2CppPath().c_str();

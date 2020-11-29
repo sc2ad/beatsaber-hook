@@ -353,7 +353,7 @@ class il2cpp_functions {
     // must be done on-demand because the pointers aren't necessarily correct at the time of il2cpp_functions::Init
     static void CheckS_GlobalMetadata() {
         if (!s_GlobalMetadataHeader) {
-            static auto logger = Logger::get().WithContext("il2cpp_functions").WithContext("CheckS_GlobalMetadata");
+            static auto& logger = Logger::get().WithContext("il2cpp_functions").WithContext("CheckS_GlobalMetadata");
             s_GlobalMetadata = *(il2cpp_functions::s_GlobalMetadataPtr);
             s_GlobalMetadataHeader = *(il2cpp_functions::s_GlobalMetadataHeaderPtr);
             logger.debug("sanity: %X (should be 0xFAB11BAF)", s_GlobalMetadataHeader->sanity);

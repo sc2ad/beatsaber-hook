@@ -327,9 +327,9 @@ struct Array : public Il2CppArray
         static auto* method = CRASH_UNLESS(il2cpp_utils::FindMethodUnsafe(
             this, "System.Collections.Generic.IEnumerable`1.GetEnumerator", 0));
       #ifdef HAS_CODEGEN
-        return CRASH_UNLESS(il2cpp_utils::RunMethod<System::Collections::Generic::IEnumerator_1<T>*>(
+        return CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe<System::Collections::Generic::IEnumerator_1<T>*>(
       #else
-        return CRASH_UNLESS(il2cpp_utils::RunMethod(
+        return CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe(
       #endif
             this, method));
     }
@@ -338,16 +338,16 @@ struct Array : public Il2CppArray
         // TODO: find a better way around the existence of 2 methods with this name (the 2nd not being generic at all)
         static auto* method = CRASH_UNLESS(il2cpp_utils::FindMethodUnsafe(
             this, "System.Collections.Generic.ICollection`1.Contains", 1));
-        return CRASH_UNLESS(il2cpp_utils::RunMethod<bool>(this, method, item));
+        return CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe<bool>(this, method, item));
     }
     void CopyTo(::Array<T>* array, int arrayIndex) {
         static auto* method = CRASH_UNLESS(il2cpp_utils::FindMethodUnsafe(
             this, "System.Collections.Generic.ICollection`1.CopyTo", 2));
-        return CRASH_UNLESS(il2cpp_utils::RunMethod(this, method, array, arrayIndex));
+        return CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe(this, method, array, arrayIndex));
     }
     int IndexOf(T item) {
         static auto* method = CRASH_UNLESS(il2cpp_utils::FindMethodUnsafe(this, "System.Collections.Generic.IList`1.IndexOf", 1));
-        return CRASH_UNLESS(il2cpp_utils::RunMethod<int>(this, method, item));
+        return CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe<int>(this, method, item));
     }
 };
 

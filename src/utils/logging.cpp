@@ -200,22 +200,77 @@ void Logger::startConsumer() {
     }
 }
 
-LoggerContextObject Logger::WithContext(std::string_view context) {
+LoggerContextObject& Logger::WithContext(std::string_view context) {
     contextMutex.lock();
     for (auto& item : disabledContexts) {
         if (context.starts_with(item)) {
+            // Disable context
+            auto& tmp = contexts.emplace_back(*this, context, false);
             contextMutex.unlock();
-            // If I am silent, my context objects are also silent.
-            return LoggerContextObject(*this, context, options.silent);
+            return tmp;
         }
     }
+    // If I am silent, my context objects are disabled.
+    auto& tmp = contexts.emplace_back(*this, context, !options.silent);
     contextMutex.unlock();
-    return LoggerContextObject(*this, context, true);
+    return tmp;
+}
+
+LoggerContextObject& Logger::WithContext(LoggerContextObject* parent, std::string_view context) {
+    contextMutex.lock();
+    for (auto& item : disabledContexts) {
+        if (context.starts_with(item)) {
+            // Disable context
+            if (parent) {
+                auto& tmp = contexts.emplace_back(parent, parent->context + options.contextSeparator + context.data(), false);
+                contextMutex.unlock();
+                return tmp;
+            } else {
+                auto& tmp = contexts.emplace_back(*this, context, false);
+                contextMutex.unlock();
+                return tmp;
+            }
+        }
+    }
+    // If I am silent, my context objects are disabled.
+    if (parent) {
+        auto& tmp = contexts.emplace_back(parent, parent->context + options.contextSeparator + context.data(), !options.silent);
+        contextMutex.unlock();
+        return tmp;
+    } else {
+        auto& tmp = contexts.emplace_back(*this, context, !options.silent);
+        contextMutex.unlock();
+        return tmp;
+    }
+}
+
+void Logger::RecurseChangeContext(LoggerContextObject* ctx, std::string_view context, bool enable) {
+    if (!ctx) {
+        // Failsafe
+        return;
+    }
+    if (ctx->context.starts_with(context)) {
+        ctx->enabled = enable;
+        ctx->changeChildren(enable);
+    } else {
+        // For each child, if we didn't match, check to see if its context starts with the context to disable
+        for (auto* child : ctx->childrenContexts) {
+            RecurseChangeContext(child, context, enable);
+        }
+    }
 }
 
 void Logger::DisableContext(std::string_view context) {
     contextMutex.lock();
-    disabledContexts.emplace(context);
+    disabledContexts.emplace(context.data());
+    // We should also iterate over all disabledContexts and determine if any existing contexts need to be disabled.
+    // Existing contexts could have parent contexts, though.
+    for (auto& ctx : contexts) {
+        // For each context, only check those without parents (top level, recurse down)
+        if (ctx.parentContext == nullptr) {
+            RecurseChangeContext(&ctx, context, false);
+        }
+    }
     contextMutex.unlock();
 }
 
@@ -224,6 +279,12 @@ void Logger::EnableContext(std::string_view context) {
     auto itr = disabledContexts.find(std::string(context));
     if (itr != disabledContexts.end()) {
         disabledContexts.erase(itr);
+    }
+    for (auto& ctx : contexts) {
+        // For each context, only check those without parents (top level, recurse down)
+        if (ctx.parentContext == nullptr) {
+            RecurseChangeContext(&ctx, context, true);
+        }
     }
     contextMutex.unlock();
 }

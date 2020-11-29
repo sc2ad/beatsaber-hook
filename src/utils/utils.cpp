@@ -13,7 +13,7 @@
 #include "modloader/shared/modloader.hpp"
 
 void safeAbort(const char* func, const char* file, int line) {
-    static auto logger = Logger::get().WithContext("CRASH_UNLESS");
+    static auto& logger = Logger::get().WithContext("CRASH_UNLESS");
     // we REALLY want this to appear at least once in the log (for fastest fixing)
     for (int i = 0; i < 2; i++) {
         usleep(100000L);  // 0.1s

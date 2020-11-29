@@ -153,7 +153,7 @@ class Logger {
         /// Avoid entering contexts with names that contain % characters.
         /// @param context The context name to enter
         /// @returns LoggerContextObject that is used within the context.
-        LoggerContextObject WithContext(std::string_view context);
+        LoggerContextObject& WithContext(std::string_view context);
         /// @brief Disable logging for any contexts that start with the provided string.
         /// This is thread independent, and will silence across all threads
         void DisableContext(std::string_view context);
@@ -166,9 +166,13 @@ class Logger {
     private:
         /// @brief The options associated with this logger
         LoggerOptions options;
+
         std::unordered_set<std::string> disabledContexts;
+        /// @brief All created contexts for this instance
+        std::list<LoggerContextObject> contexts;
         /// @brief The mutex for the contexts maps/sets
         std::mutex contextMutex;
+
         std::string tag;
         const ModInfo modInfo;
         // TODO: Each Logger instance is responsible for their own buffer.
@@ -178,6 +182,11 @@ class Logger {
         static bool consumerStarted;
         static std::list<LoggerBuffer*> buffers;
         static std::mutex bufferMutex;
+
+        /// @brief Constructs a context with a parent. This is called by LoggerContextObject.WithContext.
+        LoggerContextObject& WithContext(LoggerContextObject* parent, std::string_view context);
+        /// @brief Recurses over all children contexts and disables/enables if they start with context.
+        void RecurseChangeContext(LoggerContextObject* ctx, std::string_view context, bool enable);
 
         static void emplace_safe(LoggerBuffer& buffer) {
             // Obtain lock
@@ -191,22 +200,56 @@ class Logger {
 
 class LoggerContextObject {
     friend Logger;
+    // The actual message to indicate the context.
     std::string tag;
     bool enabled = true;
+
+    /// @brief Iterates over all children and either enables or disables them.
+    void changeChildren(bool enable) {
+        for (auto* item : childrenContexts) {
+            item->enabled = enable;
+        }
+    }
+
+    LoggerContextObject* parentContext = nullptr;
+    std::list<LoggerContextObject*> childrenContexts;
+
+    public:
     LoggerContextObject(Logger& l, std::string_view context_, bool enabled_) : enabled(enabled_), logger(l), context(context_.data()) {
         tag.append("(").append(context_.data()).append(") ");
     }
-    public:
+
+    LoggerContextObject(LoggerContextObject* const parent, std::string_view context_, bool enabled_)
+        : enabled(enabled_ && parent->enabled), parentContext(parent), logger(parent->logger), context(context_)
+    {
+        tag.append("(").append(context.data()).append(") ");
+        parentContext->childrenContexts.push_back(this);
+    }
     /// @brief The Logger reference.
     Logger& logger;
     /// @brief The context of this LoggerContextObject
     const std::string context;
+    /// @brief The parent context (or nullptr if there is no parent)
+    constexpr const LoggerContextObject* getParent() {
+        return parentContext;
+    }
+    /// @brief The children contexts (empty if there are no children)
+    const std::list<LoggerContextObject*> getChildren() {
+        return childrenContexts;
+    }
     // Cannot copy a context object
     LoggerContextObject(const LoggerContextObject&) = delete;
     // Can move a context object
     LoggerContextObject(LoggerContextObject&& other) = default;
     // Can delete a context object
-    ~LoggerContextObject() = default;
+    ~LoggerContextObject() {
+        // We delete all of our children
+        childrenContexts.clear();
+        // Then we remove ourselves from our parent
+        if (parentContext) {
+            parentContext->childrenContexts.remove(this);
+        }
+    }
 
     void log(Logging::Level lvl, std::string str) const {
         if (enabled) {
@@ -249,12 +292,12 @@ class LoggerContextObject {
             logger.debug(tag + fmt.data(), args...);
         }
     }
-    /// @brief Enter a new context. The context entered is separated by logger.options.contextSeparator
+    /// @brief Enter a new context. This call forwards to logger.WithContext(this, ctx).
     /// Avoid entering contexts with names that contain % characters.
     /// @param ctx The context name to enter
     /// @returns The LoggerContextObject in the context
-    LoggerContextObject WithContext(std::string_view ctx) {
-        auto tmp = logger.WithContext(context + logger.getOptions().contextSeparator + std::string(ctx.data()));
+    LoggerContextObject& WithContext(std::string_view ctx) {
+        auto& tmp = logger.WithContext(this, ctx);
         // Copy over enabled
         tmp.enabled = enabled;
         return tmp;

@@ -142,7 +142,7 @@ namespace il2cpp_utils {
 
     static std::unordered_map<Il2CppClass*, std::map<std::string, Il2CppGenericClass*, doj::alphanum_less<std::string>>> classToGenericClassMap;
     void BuildGenericsMap() {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("BuildGenericsMap");
+        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("BuildGenericsMap");
         il2cpp_functions::Init();
         auto* metadataReg = RET_V_UNLESS(logger, *il2cpp_functions::s_Il2CppMetadataRegistrationPtr);
         logger.debug("metadataReg: %p, offset = %lX", metadataReg, ((intptr_t)metadataReg) - getRealOffset(0));

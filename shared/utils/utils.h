@@ -188,16 +188,16 @@ auto crashUnless(T&& arg, const char* func, const char* file, int line) {
     return unwrap_optionals(arg);
 }
 #ifndef SUPPRESS_MACRO_LOGS
-#define CRASH_UNLESS(expr) crashUnless(expr, __PRETTY_FUNCTION__, __FILE__, __LINE__)
+#define CRASH_UNLESS(...) crashUnless(__VA_ARGS__, __PRETTY_FUNCTION__, __FILE__, __LINE__)
 #else
-#define CRASH_UNLESS(expr) crashUnless(expr, "undefined_function", "undefined_file", -1)
+#define CRASH_UNLESS(...) crashUnless(__VA_ARGS__, "undefined_function", "undefined_file", -1)
 #endif
 
 template<class T>
 intptr_t getBase(T pc) {
     static_assert(sizeof(T) >= sizeof(void*));
     Dl_info info;
-    static auto logger = Logger::get().WithContext("getBase");
+    static auto& logger = Logger::get().WithContext("getBase");
     RET_0_UNLESS(logger, dladdr((void*)pc, &info));
     return (intptr_t)info.dli_fbase;
 }
