@@ -13,12 +13,14 @@
 #include "modloader/shared/modloader.hpp"
 
 void safeAbort(const char* func, const char* file, int line) {
-    Logger::closeAll();
+    static auto logger = Logger::get().WithContext("CRASH_UNLESS");
     // we REALLY want this to appear at least once in the log (for fastest fixing)
     for (int i = 0; i < 2; i++) {
         usleep(100000L);  // 0.1s
-        Logger::get().critical("Aborting in %s at %s:%i", func, file, line);
+        // TODO: Make this eventually have a passed in context
+        logger.critical("Aborting in %s at %s:%i", func, file, line);
     }
+    Logger::closeAll();
     usleep(100000L);  // 0.1s
     std::terminate();  // cleans things up and then calls abort
 }

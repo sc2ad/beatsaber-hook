@@ -89,6 +89,7 @@ class Consumer;
 class Logger {
     friend Consumer;
     friend LoggerBuffer;
+    friend LoggerContextObject;
     public:
         Logger(const ModInfo info, LoggerOptions options_) : options(options_), modInfo(info), buff(emplace_safe(modInfo)) {
             tag = "QuestHook[" + info.id + "|v" + info.version + "]";
@@ -134,6 +135,7 @@ class Logger {
             return options;
         }
         /// @brief Enters a logging context. Should be used for more specific logging information.
+        /// Avoid entering contexts with names that contain % characters.
         /// @param context The context name to enter
         /// @returns LoggerContextObject that is used within the context.
         LoggerContextObject WithContext(std::string_view context);
@@ -168,15 +170,17 @@ class Logger {
 };
 
 class LoggerContextObject {
+    friend Logger;
     std::string tag;
+    bool enabled = true;
+    LoggerContextObject(Logger& l, std::string_view context_, bool enabled_) : enabled(enabled_), logger(l), context(context_.data()) {
+        tag.append("(").append(context_.data()).append(") ");
+    }
     public:
-    /// @brief a const Logger reference. If you wish to modify the original logger, modify it before calling .WithContext
-    const Logger& logger;
+    /// @brief The Logger reference.
+    Logger& logger;
     /// @brief The context of this LoggerContextObject
     const std::string context;
-    LoggerContextObject(const Logger& l, std::string_view context_) : logger(l), context(context_) {
-        tag.append("(").append(context_).append(") ");
-    }
     // Cannot copy a context object
     LoggerContextObject(const LoggerContextObject&) = delete;
     // Can move a context object
@@ -185,36 +189,54 @@ class LoggerContextObject {
     ~LoggerContextObject() = default;
 
     void log(Logging::Level lvl, std::string str) const {
-        logger.log(lvl, tag + str);
+        if (enabled) {
+            logger.log(lvl, tag + str);
+        }
     }
     template<typename... TArgs>
     void log(Logging::Level lvl, std::string_view fmt, TArgs... args) const {
-        logger.log(lvl, tag + fmt.data(), args...);
+        if (enabled) {
+            logger.log(lvl, tag + fmt.data(), args...);
+        }
     }
     template<typename... TArgs>
     void critical(std::string_view fmt, TArgs... args) const {
-        logger.critical(tag + fmt.data(), args...);
+        if (enabled) {
+            logger.critical(tag + fmt.data(), args...);
+        }
     }
     template<typename... TArgs>
     void error(std::string_view fmt, TArgs... args) const {
-        logger.error(tag + fmt.data(), args...);
+        if (enabled) {
+            logger.error(tag + fmt.data(), args...);
+        }
     }
     template<typename... TArgs>
     void warning(std::string_view fmt, TArgs... args) const {
-        logger.warning(tag + fmt.data(), args...);
+        if (enabled) {
+            logger.warning(tag + fmt.data(), args...);
+        }
     }
     template<typename... TArgs>
     void info(std::string_view fmt, TArgs... args) const {
-        logger.info(tag + fmt.data(), args...);
+        if (enabled) {
+            logger.info(tag + fmt.data(), args...);
+        }
     }
     template<typename... TArgs>
     void debug(std::string_view fmt, TArgs... args) const {
-        logger.debug(tag + fmt.data(), args...);
+        if (enabled) {
+            logger.debug(tag + fmt.data(), args...);
+        }
     }
     /// @brief Enter a new context. The context entered is separated by logger.options.contextSeparator
+    /// Avoid entering contexts with names that contain % characters.
     /// @param ctx The context name to enter
     /// @returns The LoggerContextObject in the context
     LoggerContextObject WithContext(std::string_view ctx) {
-        return LoggerContextObject(logger, context + logger.getOptions().contextSeparator + std::string(ctx));
+        auto tmp = logger.WithContext(context + logger.getOptions().contextSeparator + std::string(ctx.data()));
+        // Copy over enabled
+        tmp.enabled = enabled;
+        return tmp;
     }
 };

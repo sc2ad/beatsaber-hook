@@ -1,6 +1,5 @@
 #pragma once
 
-// Please see comments in il2cpp-utils.hpp
 // TODO: Make this into a static class
 namespace il2cpp_utils {
     // A hash function used to hash a pair of any kind

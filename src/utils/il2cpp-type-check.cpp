@@ -1,6 +1,6 @@
 #include "../../shared/utils/il2cpp-type-check.hpp"
 #include "../../shared/utils/il2cpp-utils.hpp"
-#include "hashing.hpp"
+#include "../../shared/utils/hashing.hpp"
 #include <unordered_map>
 
 namespace il2cpp_utils {
@@ -9,6 +9,7 @@ namespace il2cpp_utils {
 
     Il2CppClass* GetClassFromName(std::string_view name_space, std::string_view type_name) {
         il2cpp_functions::Init();
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("GetClassFromName");
 
         // TODO: avoid creating std::string at any point except new pair insertion via P0919
         // Check cache
@@ -17,7 +18,7 @@ namespace il2cpp_utils {
         if (itr != namesToClassesCache.end()) {
             return itr->second;
         }
-        auto dom = RET_0_UNLESS(il2cpp_functions::domain_get());
+        auto dom = RET_0_UNLESS(logger, il2cpp_functions::domain_get());
         size_t assemb_count;
         const Il2CppAssembly** allAssemb = il2cpp_functions::domain_get_assemblies(dom, &assemb_count);
 
@@ -25,7 +26,7 @@ namespace il2cpp_utils {
             auto assemb = allAssemb[i];
             auto img = il2cpp_functions::assembly_get_image(assemb);
             if (!img) {
-                Logger::get().error("Assembly with name: %s has a null image!", assemb->aname.name);
+                logger.error("Assembly with name: %s has a null image!", assemb->aname.name);
                 continue;
             }
             auto klass = il2cpp_functions::class_from_name(img, name_space.data(), type_name.data());
@@ -34,21 +35,22 @@ namespace il2cpp_utils {
                 return klass;
             }
         }
-        Logger::get().error("il2cpp_utils: GetClassFromName: could not find class with namepace: %s and name: %s",
+        logger.error("Could not find class with namepace: %s and name: %s",
             name_space.data(), type_name.data());
         return nullptr;
     }
 
     Il2CppClass* MakeGeneric(const Il2CppClass* klass, std::vector<const Il2CppClass*> args) {
         il2cpp_functions::Init();
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeGeneric");
 
-        auto typ = RET_0_UNLESS(il2cpp_functions::defaults->systemtype_class);
-        auto klassType = RET_0_UNLESS(GetSystemType(klass));
+        auto typ = RET_0_UNLESS(logger, il2cpp_functions::defaults->systemtype_class);
+        auto klassType = RET_0_UNLESS(logger, GetSystemType(klass));
 
         // Call Type.MakeGenericType on it
         auto arr = il2cpp_functions::array_new_specific(typ, args.size());
         if (!arr) {
-            Logger::get().error("il2cpp_utils: MakeGeneric: Failed to make new array with length: %zu", args.size());
+            logger.error("Failed to make new array with length: %zu", args.size());
             return nullptr;
         }
 
@@ -56,29 +58,30 @@ namespace il2cpp_utils {
         for (auto arg : args) {
             auto* o = GetSystemType(arg);
             if (!o) {
-                Logger::get().error("il2cpp_utils: MakeGeneric: Failed to get type for %s", il2cpp_functions::class_get_name_const(arg));
+                logger.error("Failed to get type for %s", il2cpp_functions::class_get_name_const(arg));
                 return nullptr;
             }
             il2cpp_array_set(arr, void*, i, reinterpret_cast<void*>(o));
             i++;
         }
 
-        auto* reflection_type = RET_0_UNLESS(MakeGenericType(reinterpret_cast<Il2CppReflectionType*>(klassType), arr));
-        auto* ret = RET_0_UNLESS(il2cpp_functions::class_from_system_type(reflection_type));
-        Logger::get().debug("il2cpp_utils: MakeGeneric: returning '%s'", ClassStandardName(ret).c_str());
+        auto* reflection_type = RET_0_UNLESS(logger, MakeGenericType(reinterpret_cast<Il2CppReflectionType*>(klassType), arr));
+        auto* ret = RET_0_UNLESS(logger, il2cpp_functions::class_from_system_type(reflection_type));
+        logger.debug("Returning '%s'", ClassStandardName(ret).c_str());
         return ret;
     }
 
     Il2CppClass* MakeGeneric(const Il2CppClass* klass, const Il2CppType** types, uint32_t numTypes) {
         il2cpp_functions::Init();
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("GetClassFromName");
 
-        auto typ = RET_0_UNLESS(il2cpp_functions::defaults->systemtype_class);
-        auto klassType = RET_0_UNLESS(GetSystemType(klass));
+        auto typ = RET_0_UNLESS(logger, il2cpp_functions::defaults->systemtype_class);
+        auto klassType = RET_0_UNLESS(logger, GetSystemType(klass));
 
         // Call Type.MakeGenericType on it
         auto arr = il2cpp_functions::array_new_specific(typ, numTypes);
         if (!arr) {
-            Logger::get().error("il2cpp_utils: MakeGeneric: Failed to make new array with length: %u", numTypes);
+            logger.error("Failed to make new array with length: %u", numTypes);
             return nullptr;
         }
 
@@ -86,15 +89,15 @@ namespace il2cpp_utils {
             const Il2CppType* arg = types[i];
             auto* o = GetSystemType(arg);
             if (!o) {
-                Logger::get().error("il2cpp_utils: MakeGeneric: Failed to get system type for %s", il2cpp_functions::type_get_name(arg));
+                logger.error("Failed to get system type for %s", il2cpp_functions::type_get_name(arg));
                 return nullptr;
             }
             il2cpp_array_set(arr, void*, i, reinterpret_cast<void*>(o));
         }
 
-        auto* reflection_type = RET_0_UNLESS(MakeGenericType(reinterpret_cast<Il2CppReflectionType*>(klassType), arr));
-        auto* ret = RET_0_UNLESS(il2cpp_functions::class_from_system_type(reflection_type));
-        Logger::get().debug("il2cpp_utils: MakeGeneric: returning '%s'", ClassStandardName(ret).c_str());
+        auto* reflection_type = RET_0_UNLESS(logger, MakeGenericType(reinterpret_cast<Il2CppReflectionType*>(klassType), arr));
+        auto* ret = RET_0_UNLESS(logger, il2cpp_functions::class_from_system_type(reflection_type));
+        logger.debug("Returning '%s'", ClassStandardName(ret).c_str());
         return ret;
     }
 }

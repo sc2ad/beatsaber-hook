@@ -37,24 +37,26 @@ std::optional<std::pair<uint64_t, uint64_t>> DecodeBitMasks(unsigned N, unsigned
 }
 
 decltype(Instruction::result) ExtractAddress(Instruction* instWithResultAdr, Instruction* instWithImmOffset) {
-    RET_0_UNLESS(instWithImmOffset->imm);
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("ExtractAddress");
+    RET_0_UNLESS(logger, instWithImmOffset->imm);
     auto jmpOff = instWithResultAdr->result;
     auto offset = *(instWithImmOffset->imm);
 
     auto jmp = jmpOff + offset;
-    Logger::get().debug("offset: %lX, jmp: %lX (offset %lX)", offset, jmp, asOffset(jmp));
+    logger.debug("offset: %lX, jmp: %lX (offset %lX)", offset, jmp, asOffset(jmp));
     return jmp;
 }
 
 decltype(Instruction::result) ExtractAddress(const int32_t* addr, int pcRelN, int offsetN) {
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("ExtractAddress");
     Instruction funcInst(addr);
     auto instAdrp = funcInst.findNthPcRelAdr(pcRelN);
-    RET_0_UNLESS(instAdrp);
+    RET_0_UNLESS(logger, instAdrp);
     auto instOff = instAdrp->findNthImmOffsetOnReg(offsetN, instAdrp->Rd);
-    RET_0_UNLESS(instOff);
-    Logger::get().debug("adrp idx: %lu, offset instruction idx: %lu", instAdrp->addr - funcInst.addr, instOff->addr - funcInst.addr);
-    Logger::get().debug("instAdrp: %s", instAdrp->toString().c_str());
-    Logger::get().debug("instOff:  %s", instOff->toString().c_str());
+    RET_0_UNLESS(logger, instOff);
+    logger.debug("adrp idx: %lu, offset instruction idx: %lu", instAdrp->addr - funcInst.addr, instOff->addr - funcInst.addr);
+    logger.debug("instAdrp: %s", instAdrp->toString().c_str());
+    logger.debug("instOff:  %s", instOff->toString().c_str());
     return ExtractAddress(instAdrp, instOff);
 }
 
@@ -65,16 +67,18 @@ decltype(Instruction::result) ExtractAddressFixed(const int32_t* inst, int idxOf
 }
 
 Instruction* EvalSwitch(const uint32_t* switchTable, int switchCaseValue) {
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("EvalSwitch");
     auto stOffset = SignExtend<int64_t>(switchTable[switchCaseValue - 1], 32);
     auto jmpAddr = (int64_t)switchTable + stOffset;
-    Logger::get().debug("jmp offset from switch table: %lX (-%lX); jmp: %lX (offset %lX)",
+    logger.debug("jmp offset from switch table: %lX (-%lX); jmp: %lX (offset %lX)",
         stOffset, -stOffset, jmpAddr, asOffset(jmpAddr));
     return new Instruction((const int32_t*)jmpAddr);
 }
 
 Instruction* EvalSwitch(const int32_t* inst, int pcRelN, int offsetN, int switchCaseValue) {
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("EvalSwitch");
     auto switchTable = (const uint32_t*)ExtractAddress(inst, pcRelN, offsetN);
-    RET_0_UNLESS(switchTable);
+    RET_0_UNLESS(logger, switchTable);
     return EvalSwitch(switchTable, switchCaseValue);
 }
 
@@ -186,11 +190,12 @@ Instruction* Instruction::findNthImmOffsetOnReg(int n, uint_fast8_t reg, int ret
 }
 
 Instruction::Instruction(const int32_t* inst) {
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("Instruction");
     addr = inst;
     auto pc = (intptr_t)inst;
     auto base = getBase(pc);
     if (!base) {
-        Logger::get().critical("Instruction::Instruction: Could not get the .so base for pointer %p. "
+        logger.critical("Instruction::Instruction: Could not get the .so base for pointer %p. "
             "It is likely not a valid pointer at all!", inst);
         return;
     }
@@ -200,7 +205,7 @@ Instruction::Instruction(const int32_t* inst) {
     auto code = *inst;
     // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64#top
     uint_fast8_t top0 = bits(code, 28, 25);  // op0 for top-level only
-    Logger::get().debug("inst: ptr = 0x%lX (offset 0x%lX), bytes = %s (%X), top-level op0: %i",
+    logger.debug("inst: ptr = 0x%lX (offset 0x%lX), bytes = %s (%X), top-level op0: %i",
         pc, pc - base, std::bitset<32>(code).to_string().c_str(), code, top0);
     // Bit patterns like 1x0x where x is any bit and all other bits must match are implemented by:
     // 1. (a & [1's where pattern has non-x]) == [pattern with x's as 0]
@@ -306,7 +311,7 @@ Instruction::Instruction(const int32_t* inst) {
                             }
                         }
                     }
-                    Logger::get().debug("op1 = 0, op0: %i, op2: %i (1xxx), op3: %i", op0, op2, op3);
+                    logger.debug("op1 = 0, op0: %i, op2: %i (1xxx), op3: %i", op0, op2, op3);
                 } else {
                     // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/data-processing-register#addsub_ext
                     kind[parseLevel++] = "Add/subtract (extended register)";
@@ -467,7 +472,7 @@ Instruction::Instruction(const int32_t* inst) {
                     }
                 }
             } else {
-                Logger::get().debug("op1 = 1, op0: %i, op2: %i (0xxx), op3: %i", op0, op2, op3);
+                logger.debug("op1 = 1, op0: %i, op2: %i (0xxx), op3: %i", op0, op2, op3);
             }
         }
     } else if ((top0 & 0b111) == 0b111) {  // x111
@@ -489,7 +494,7 @@ Instruction::Instruction(const int32_t* inst) {
             const uint_fast8_t ilh = 30, ill = 29, ihh = 23, ihl = 5;
             uint_fast8_t immlo = bits(code, ilh, ill);
             auto immhi = bits(code, ihh, ihl);
-            Logger::get().debug("immhi: 0x%X (%i), immlo: 0x%X (%i)", immhi, immhi, immlo, immlo);
+            logger.debug("immhi: 0x%X (%i), immlo: 0x%X (%i)", immhi, immhi, immlo, immlo);
             auto immI = (immhi << (ilh - ill + 1)) + immlo;
             uint_fast8_t immINumBits = ihh - ihl + 1 + ilh - ill + 1;
             if (op == 0b1) {
@@ -501,12 +506,12 @@ Instruction::Instruction(const int32_t* inst) {
             } else {
                 kind[parseLevel++] = "ADR";
             }
-            Logger::get().debug("imm initial: 0x%X (%i); immNumBits: %i", immI, immI, immINumBits);
+            logger.debug("imm initial: 0x%X (%i); immNumBits: %i", immI, immI, immINumBits);
             // the documentation calls this imm, but it's not exposed in the instruction string
             auto privateImm = SignExtend<int64_t>(immI, immINumBits);
             result = pc + privateImm;
             label = (decltype(label)::value_type) result;
-            Logger::get().debug("imm: 0x%lX; result: 0x%lX (offset 0x%lX)", privateImm, result, result - base);
+            logger.debug("imm: 0x%lX; result: 0x%lX (offset 0x%lX)", privateImm, result, result - base);
         } else if (op0 == 0b1) {
             numSourceRegisters = 1;
             Rs0CanBeSP = true;
@@ -570,9 +575,9 @@ Instruction::Instruction(const int32_t* inst) {
             bool logical = (op0 == 0b10);
             auto masks = DecodeBitMasks(N, imms, immr, sf ? 64 : 32, logical);
             if (masks) {
-                Logger::get().debug("N: %i, immr: 0x%X (%u), imms: 0x%X, wmask: 0x%lX, tmask: 0x%lX", N, immr, immr, imms, masks->first, masks->second);
+                logger.debug("N: %i, immr: 0x%X (%u), imms: 0x%X, wmask: 0x%lX, tmask: 0x%lX", N, immr, immr, imms, masks->first, masks->second);
             } else {
-                Logger::get().debug("N: %i, immr: 0x%X (%u), imms: 0x%X, invalid bitmasks", N, immr, immr, imms);
+                logger.debug("N: %i, immr: 0x%X (%u), imms: 0x%X, invalid bitmasks", N, immr, immr, imms);
                 valid = false;
             }
 
@@ -604,7 +609,7 @@ Instruction::Instruction(const int32_t* inst) {
                         if (imm) {
                             result = *imm;
                             if (HighestSetBit(result, sizeof(result)*CHAR_BIT) < 16) {
-                                Logger::get().error("This instruction should have been assembled as MOVZ or MOVN?!");
+                                logger.error("This instruction should have been assembled as MOVZ or MOVN?!");
                             }
                         }
                     } else {
@@ -692,7 +697,7 @@ Instruction::Instruction(const int32_t* inst) {
                         kind[parseLevel++] = sf ? "UBFX - 64-bit" : "UBFX - 32-bit";
                     }
                 }
-                Logger::get().debug("sf == N == %i, opc: %i", sf, opc);
+                logger.debug("sf == N == %i, opc: %i", sf, opc);
             }
         } else {  // op1 == 1x
             if (op0 == 0b10) {
@@ -731,7 +736,7 @@ Instruction::Instruction(const int32_t* inst) {
                 } else {
                     kind[parseLevel++] = "B.cond";
                     label = (decltype(label)::value_type)(pc + (SignExtend<int64_t>(imm19, 19) << 2));
-                    Logger::get().debug("label: %lX", ((decltype(base))*label) - base);
+                    logger.debug("label: %lX", ((decltype(base))*label) - base);
                     branchType = DIR;
                 }
             }
@@ -757,7 +762,7 @@ Instruction::Instruction(const int32_t* inst) {
                             kind[parseLevel++] = "BR";
                         }
                     } else {
-                        Logger::get().debug("TODO: BRA[A/AZ/B/BZ]! opc = 0, op3: %i, op4: %i", op3, op4);
+                        logger.debug("TODO: BRA[A/AZ/B/BZ]! opc = 0, op3: %i, op4: %i", op3, op4);
                     }
                 } else if (opc == 0b1) {
                     branchType = INDCALL;
@@ -770,7 +775,7 @@ Instruction::Instruction(const int32_t* inst) {
                             kind[parseLevel++] = "BLR";
                         }
                     } else {
-                        Logger::get().debug("TODO: BLRA[A/AZ/B/BZ]! opc = 0, op3: %i, op4: %i", op3, op4);
+                        logger.debug("TODO: BLRA[A/AZ/B/BZ]! opc = 0, op3: %i, op4: %i", op3, op4);
                     }
                 } else if (opc == 0b10) {
                     branchType = RET;
@@ -781,13 +786,13 @@ Instruction::Instruction(const int32_t* inst) {
                             kind[parseLevel++] = "RET";
                         }
                     } else {
-                        Logger::get().debug("TODO: RETAA/RETAB! opc = 0b10, op3: %i, op4: %i", op3, op4);
+                        logger.debug("TODO: RETAA/RETAB! opc = 0b10, op3: %i, op4: %i", op3, op4);
                     }
                 } else {
-                    Logger::get().debug("opc: %i, op3: %i, op4: %i", opc, op3, op4);
+                    logger.debug("opc: %i, op3: %i, op4: %i", opc, op3, op4);
                 }
             } else {
-                Logger::get().debug("op0 = 0b110, op1: %lu", op1);
+                logger.debug("op0 = 0b110, op1: %lu", op1);
             }
         } else if ((op0 & 0b11) == 0) {  // x00
             // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/branches-exception-generating-and-system-instructions#branch_imm
@@ -799,9 +804,9 @@ Instruction::Instruction(const int32_t* inst) {
             label = (decltype(label)::value_type)(pc + offset);
 
             int64_t off = ((decltype(base))*label) - base;
-            Logger::get().debug("label: %lX", off);
+            logger.debug("label: %lX", off);
             if ((off < 0) || (off >= 0x03000000)) {
-                Logger::get().error("0x%lX is probably not a valid offset! Please investigate!", off);
+                logger.error("0x%lX is probably not a valid offset! Please investigate!", off);
             }
             if (!op) {
                 kind[parseLevel++] = "B";
@@ -847,7 +852,7 @@ Instruction::Instruction(const int32_t* inst) {
                 kind[parseLevel++] = op ? "TBNZ" : "TBZ";
             }
         } else {
-            Logger::get().debug("op0: %u, op1: %s, op2: %u", op0, std::bitset<14>(op1).to_string().c_str(), op2);
+            logger.debug("op0: %u, op1: %s, op2: %u", op0, std::bitset<14>(op1).to_string().c_str(), op2);
         }
     } else if ((top0 & 0b101) == 0b100) {  // x1x0
         // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/loads-and-stores
@@ -870,14 +875,14 @@ Instruction::Instruction(const int32_t* inst) {
                 // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/loads-and-stores#ldst_pos
                 kind[parseLevel++] = "Load/store register (unsigned immediate)";
                 uint_fast16_t imm12 = bits(code, 21, 10);
-                Logger::get().debug("size: %i; imm12: 0x%lX", size, imm12);
+                logger.debug("size: %i; imm12: 0x%lX", size, imm12);
                 imm = ZeroExtend<int64_t>(imm12, 12) << size;
                 wback = false;
                 postindex = false;
                 hasImmOffset = true;
             } else if ((op3 & 0b100000) == 0) {  // 0xxxxx
                 uint_fast16_t imm9 = bits(code, 20, 12);
-                Logger::get().debug("size: %i; imm9: 0x%lX", size, imm9);
+                logger.debug("size: %i; imm9: 0x%lX", size, imm9);
                 imm = SignExtend<int64_t>(imm9, 9);
 
                 if (op4 == 0b11) {
@@ -893,7 +898,7 @@ Instruction::Instruction(const int32_t* inst) {
                     postindex = true;
                     hasImmOffset = true;
                 } else {
-                    Logger::get().debug("op0 = xx11, op2 = 0x, op3 = 0xxxxx, op4: %i", op4);
+                    logger.debug("op0 = xx11, op2 = 0x, op3 = 0xxxxx, op4: %i", op4);
                 }
             } else {
                 if (op4 == 0b10) {
@@ -970,10 +975,10 @@ Instruction::Instruction(const int32_t* inst) {
                             }
                         }
                     } else {
-                        Logger::get().debug("TODO: STR/LDR (register, SIMD&FP)");
+                        logger.debug("TODO: STR/LDR (register, SIMD&FP)");
                     }
                 } else {
-                    Logger::get().debug("op0 = xx11, op2 = 0x, op3 = 1xxxxx, op4: %i", op4);
+                    logger.debug("op0 = xx11, op2 = 0x, op3 = 1xxxxx, op4: %i", op4);
                 }
             }
 
@@ -1020,7 +1025,7 @@ Instruction::Instruction(const int32_t* inst) {
                         }
                     }
                 } else {
-                    Logger::get().debug("V: %i (TODO: SIMD&FP STR/LDR)", V);
+                    logger.debug("V: %i (TODO: SIMD&FP STR/LDR)", V);
                 }
             }
         } else if ((op0 & 0b11) == 0b10) {  // xx10
@@ -1039,7 +1044,7 @@ Instruction::Instruction(const int32_t* inst) {
             if (op2 == 0) {
                 // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/loads-and-stores#ldstnapair_offs
                 kind[parseLevel++] = "Load/store no-allocate pair (offset)";
-                Logger::get().debug("opc: %i, V: %i, L: %i", opc, V, L);
+                logger.debug("opc: %i, V: %i, L: %i", opc, V, L);
             } else {
                 if (op2 == 0b1) {
                     // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/loads-and-stores#ldstpair_post
@@ -1085,18 +1090,18 @@ Instruction::Instruction(const int32_t* inst) {
                         kind[parseLevel++] = "LDP - 64-bit";
                     }
                 } else {
-                    Logger::get().debug("TODO: SIMD&FP LDP/STP. opc: %i, V: %i, L: %i", opc, V, L);
+                    logger.debug("TODO: SIMD&FP LDP/STP. opc: %i, V: %i, L: %i", opc, V, L);
                 }
             }
         } else {
-            Logger::get().debug("op0: %i, op2: %i, op3: %i, op4: %i", op0, op2, op3, op4);
+            logger.debug("op0: %i, op2: %i, op3: %i, op4: %i", op0, op2, op3, op4);
         }
     } else {
-        Logger::get().error("Our top-level bit patterns have a gap!");
+        logger.error("Our top-level bit patterns have a gap!");
         SAFE_ABORT();
     }
     if (parseLevel < sizeof(kind) / sizeof(kind[0])) {
-        Logger::get().warning("Could not complete parsing of 0x%lX (offset %lX) - need more handling for kind '%s'!", pc, pc - base, kind[parseLevel - 1]);
+        logger.warning("Could not complete parsing of 0x%lX (offset %lX) - need more handling for kind '%s'!", pc, pc - base, kind[parseLevel - 1]);
     } else {
         parsed = true;
         if (kind[parseLevel - 1] == unalloc) {
@@ -1113,11 +1118,12 @@ void InstructionTree::Eval(ProgramState* state) {
 
 InstructionTree* FindOrCreateInstruction(const int32_t* pc, ParseState& parseState, const char* msg) {
     auto p = parseState.codeToInstTree.find(pc);
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("FindOrCreateInstruction");
     if (p != parseState.codeToInstTree.end()) {
-        Logger::get().debug("not recursing: InstructionTree for %p (offset %lX) already exists", pc, asOffset((intptr_t)pc));
+        logger.debug("not recursing: InstructionTree for %p (offset %lX) already exists", pc, asOffset((intptr_t)pc));
         return p->second;
     } else {
-        Logger::get().debug("%s (pc %p, offset %lX)", msg, pc, asOffset((intptr_t)pc));
+        logger.debug("%s (pc %p, offset %lX)", msg, pc, asOffset((intptr_t)pc));
         auto inst = new (std::nothrow) InstructionTree(pc);
         parseState.frontier.push({inst, parseState.dependencyMap});  // the inserted depMap is a copy
         parseState.codeToInstTree[pc] = inst;
@@ -1130,7 +1136,8 @@ void ProcessRegisterDependencies(Instruction* inst, uint_fast8_t Rd, decltype(Pa
     for (uint_fast8_t i = 0; i < inst->numSourceRegisters; i++) {
         auto Rs = inst->Rs[i];
         if ((Rs < 0) || ((size_t)Rs >= depMap.max_size())) {
-            Logger::get().critical("Instruction is wrong! numSourceRegisters = %i but Rs[%i] = %i\n%s", inst->numSourceRegisters, i, Rs,
+            static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("ProcessRegisterDependencies");
+            logger.critical("Instruction is wrong! numSourceRegisters = %i but Rs[%i] = %i\n%s", inst->numSourceRegisters, i, Rs,
                 inst->toString().c_str());
             SAFE_ABORT();
         }
@@ -1186,12 +1193,13 @@ std::string DepMapToString(decltype(ParseState::dependencyMap)& depMap) {
 
 void InstructionTree::PopulateChildren(ParseState& parseState) {
     auto pc = this->addr;
-    Logger::get().debug("InstructionTree: %p, %s", pc, this->toString().c_str());
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("PopulateChildren");
+    logger.debug("InstructionTree: %p, %s", pc, this->toString().c_str());
     // If instruction was not fully parsed, stop.
     if (!parsed || !valid) return;
 
     if ((this->numSourceRegisters < 0) || (this->Rs[this->numSourceRegisters - 1] < 0)) {
-        Logger::get().error("The Instruction constructor did not properly parse this instruction's source registers! Please fix!");
+        logger.error("The Instruction constructor did not properly parse this instruction's source registers! Please fix!");
     }
 
     // if instruction is return, stop parsing.
@@ -1243,7 +1251,8 @@ std::string AssemblyFunction::toString() const {
 }
 
 AssemblyFunction::AssemblyFunction(const int32_t* pc): parseState() {
-    Logger::get().debug("Starting dependency map: %s", DepMapToString(parseState.dependencyMap).c_str());
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("AssemblyFunction");
+    logger.debug("Starting dependency map: %s", DepMapToString(parseState.dependencyMap).c_str());
     auto root = new InstructionTree(pc);
     parseState.frontier.push({root, std::move(parseState.dependencyMap)});
     while (!parseState.frontier.empty()) {

@@ -353,14 +353,15 @@ class il2cpp_functions {
     // must be done on-demand because the pointers aren't necessarily correct at the time of il2cpp_functions::Init
     static void CheckS_GlobalMetadata() {
         if (!s_GlobalMetadataHeader) {
+            static auto logger = Logger::get().WithContext("il2cpp_functions").WithContext("CheckS_GlobalMetadata");
             s_GlobalMetadata = *(il2cpp_functions::s_GlobalMetadataPtr);
             s_GlobalMetadataHeader = *(il2cpp_functions::s_GlobalMetadataHeaderPtr);
-            Logger::get().debug("sanity: %X (should be 0xFAB11BAF)", s_GlobalMetadataHeader->sanity);
-            Logger::get().debug("version: %i", s_GlobalMetadataHeader->version);
+            logger.debug("sanity: %X (should be 0xFAB11BAF)", s_GlobalMetadataHeader->sanity);
+            logger.debug("version: %i", s_GlobalMetadataHeader->version);
             assert(s_GlobalMetadataHeader->sanity == 0xFAB11BAF);
-            Logger::get().debug("typeDefinitionsOffset: %i", s_GlobalMetadataHeader->typeDefinitionsOffset);
-            Logger::get().debug("exportedTypeDefinitionsOffset: %i", s_GlobalMetadataHeader->exportedTypeDefinitionsOffset);
-            Logger::get().debug("nestedTypesOffset: %i", s_GlobalMetadataHeader->nestedTypesOffset);
+            logger.debug("typeDefinitionsOffset: %i", s_GlobalMetadataHeader->typeDefinitionsOffset);
+            logger.debug("exportedTypeDefinitionsOffset: %i", s_GlobalMetadataHeader->exportedTypeDefinitionsOffset);
+            logger.debug("nestedTypesOffset: %i", s_GlobalMetadataHeader->nestedTypesOffset);
             // TODO: use il2cpp_functions::defaults to define the il2cpp_defaults variable mentioned in il2cpp-class-internals.h
         }
     }

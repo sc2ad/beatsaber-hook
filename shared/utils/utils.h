@@ -60,15 +60,15 @@ auto&& unwrap_optionals(T&& arg) {
 // Logs error and RETURNS argument 1 IFF argument 2 boolean evaluates as false; else EVALUATES to argument 2
 // thank god for this GCC ({}) extension which "evaluates to the last statement"
 #ifndef SUPPRESS_MACRO_LOGS
-#define RET_UNLESS(retval, expr) ({ \
+#define RET_UNLESS(retval, loggerContext, expr) ({ \
     auto&& __temp__ = (expr); \
     if (!__temp__) { \
-        Logger::get().error("%s (in %s at %s:%i) returned false!", #expr, __PRETTY_FUNCTION__, __FILE__, __LINE__); \
+        loggerContext.error("%s (in %s at %s:%i) returned false!", #expr, __PRETTY_FUNCTION__, __FILE__, __LINE__); \
         return retval; \
     } \
     unwrap_optionals(__temp__); })
 #else
-#define RET_UNLESS(retval, expr) ({ \
+#define RET_UNLESS(retval, loggerContext, expr) ({ \
     auto&& __temp__ = (expr); \
     if (!__temp__) { \
         return retval; \
@@ -76,10 +76,46 @@ auto&& unwrap_optionals(T&& arg) {
     unwrap_optionals(__temp__); })
 #endif
 
-#define RET_V_UNLESS(expr) RET_UNLESS(, expr)
-#define RET_DEFAULT_UNLESS(expr) RET_UNLESS({}, expr)
-#define RET_0_UNLESS(expr) RET_DEFAULT_UNLESS(expr)
-#define RET_NULLOPT_UNLESS(expr) RET_DEFAULT_UNLESS(expr)
+#if __has_feature(cxx_exceptions)
+#ifndef SUPPRESS_MACRO_LOGS
+#define THROW_OR_RET_NULL(contextLogger, expr) ({ \
+    auto&& __temp__ = (expr); \
+    if (!__temp__) { \
+        contextLogger.error("%s (in %s at %s:%i) returned false!", #expr, __PRETTY_FUNCTION__, __FILE__, __LINE__); \
+        throw ::il2cpp_utils::Il2CppUtilsException(contextLogger.context, #expr " is false!", __PRETTY_FUNCTION__, __FILE__, __LINE__); \
+    } \
+    unwrap_optionals(__temp__); })
+#else
+#define THROW_OR_RET_NULL(contextLogger, expr) ({ \
+    auto&& __temp__ = (expr); \
+    if (!__temp__) { \
+        throw ::il2cpp_utils::Il2CppUtilsException(contextLogger.context, #expr " is false!"); \
+    } \
+    unwrap_optionals(__temp__); })
+#endif
+#else
+#ifndef SUPPRESS_MACRO_LOGS
+#define THROW_OR_RET_NULL(contextLogger, expr) ({ \
+    auto&& __temp__ = (expr); \
+    if (!__temp__) { \
+        contextLogger.error("%s (in %s at %s:%i) returned false!", #expr, __PRETTY_FUNCTION__, __FILE__, __LINE__); \
+        return nullptr; \
+    } \
+    unwrap_optionals(__temp__); })
+#else
+#define THROW_OR_RET_NULL(contextLogger, expr) ({ \
+    auto&& __temp__ = (expr); \
+    if (!__temp__) { \
+        return nullptr; \
+    } \
+    unwrap_optionals(__temp__); })
+#endif
+#endif
+
+#define RET_V_UNLESS(loggerContext, expr) RET_UNLESS(, loggerContext, expr)
+#define RET_DEFAULT_UNLESS(loggerContext, expr) RET_UNLESS({}, loggerContext, expr)
+#define RET_0_UNLESS(loggerContext, expr) RET_DEFAULT_UNLESS(loggerContext, expr)
+#define RET_NULLOPT_UNLESS(loggerContext, expr) RET_DEFAULT_UNLESS(loggerContext, expr)
 
 // Produces a has_[member]<T, U> type trait whose ::value tells you whether T has a member named [member] with type U.
 #define DEFINE_MEMBER_CHECKER(member) \
@@ -160,7 +196,8 @@ template<class T>
 intptr_t getBase(T pc) {
     static_assert(sizeof(T) >= sizeof(void*));
     Dl_info info;
-    RET_0_UNLESS(dladdr((void*)pc, &info));
+    static auto logger = Logger::get().WithContext("getBase");
+    RET_0_UNLESS(logger, dladdr((void*)pc, &info));
     return (intptr_t)info.dli_fbase;
 }
 
@@ -238,23 +275,23 @@ retval hook_ ## name(__VA_ARGS__)
 
 #ifdef __aarch64__
 
-#define INSTALL_HOOK(name) MACRO_WRAP( \
-Logger::get().info("Installing 64 bit hook: %s", #name); \
+#define INSTALL_HOOK(logger, name) MACRO_WRAP( \
+logger.info("Installing 64 bit hook: %s", #name); \
 A64HookFunction((void*)getRealOffset(addr_ ## name),(void*) hook_ ## name, (void**)&name); \
 )
 
-#define INSTALL_HOOK_OFFSETLESS(name, methodInfo) MACRO_WRAP( \
-Logger::get().info("Installing 64 bit offsetless hook: %s at %lX", #name, asOffset(methodInfo->methodPointer)); \
+#define INSTALL_HOOK_OFFSETLESS(logger, name, methodInfo) MACRO_WRAP( \
+logger.info("Installing 64 bit offsetless hook: %s at %lX", #name, asOffset(methodInfo->methodPointer)); \
 A64HookFunction((void*)methodInfo->methodPointer,(void*) hook_ ## name, (void**)&name); \
 )
 
-#define INSTALL_HOOK_NAT(name) MACRO_WRAP( \
-Logger::get().info("Installing 64 bit native hook: %s", #name); \
+#define INSTALL_HOOK_NAT(logger, name) MACRO_WRAP( \
+logger.info("Installing 64 bit native hook: %s", #name); \
 A64HookFunction((void*)(addr_ ## name),(void*) hook_ ## name, (void**)&name); \
 )
 
-#define INSTALL_HOOK_DIRECT(name, addr) MACRO_WRAP( \
-Logger::get().info("Installing 64 bit direct hook: %s", #name); \
+#define INSTALL_HOOK_DIRECT(logger, name, addr) MACRO_WRAP( \
+logger.info("Installing 64 bit direct hook: %s", #name); \
 A64HookFunction((void*)addr, (void*) hook_ ## name, (void**)&name); \
 )
 
@@ -262,48 +299,48 @@ A64HookFunction((void*)addr, (void*) hook_ ## name, (void**)&name); \
 // and sets the hook to call the original function
 // No original trampoline is created when uninstalling a hook, hence the nullptr
 
-#define UNINSTALL_HOOK(name) MACRO_WRAP( \
-Logger::get().info("Uninstalling 64 bit hook: %s", #name); \
+#define UNINSTALL_HOOK(logger, name) MACRO_WRAP( \
+logger.info("Uninstalling 64 bit hook: %s", #name); \
 A64HookFunction((void*)getRealOffset(addr_ ## name),(void*)name, (void**)nullptr); \
 )
 
-#define UNINSTALL_HOOK_OFFSETLESS(name, methodInfo) MACRO_WRAP( \
-Logger::get().info("Uninstalling 64 bit offsetless hook: %s at %lX", #name, asOffset(methodInfo->methodPointer)); \
+#define UNINSTALL_HOOK_OFFSETLESS(logger, name, methodInfo) MACRO_WRAP( \
+logger.info("Uninstalling 64 bit offsetless hook: %s at %lX", #name, asOffset(methodInfo->methodPointer)); \
 A64HookFunction((void*)methodInfo->methodPointer,(void*)name, (void**)nullptr); \
 )
 
-#define UNINSTALL_HOOK_NAT(name) MACRO_WRAP( \
-Logger::get().info("Uninstalling 64 bit native hook: %s", #name); \
+#define UNINSTALL_HOOK_NAT(logger, name) MACRO_WRAP( \
+logger.info("Uninstalling 64 bit native hook: %s", #name); \
 A64HookFunction((void*)(addr_ ## name),(void*)name, (void**)nullptr); \
 )
 
-#define UNINSTALL_HOOK_DIRECT(name, addr) MACRO_WRAP( \
-Logger::get().info("Uninstalling 64 bit direct hook: %s", #name); \
+#define UNINSTALL_HOOK_DIRECT(logger, name, addr) MACRO_WRAP( \
+logger.info("Uninstalling 64 bit direct hook: %s", #name); \
 A64HookFunction((void*)addr, (void*)name, (void**)nullptr); \
 )
 
 #else
 
-#define INSTALL_HOOK(name) MACRO_WRAP( \
-Logger::get().info("Installing 32 bit hook!"); \
+#define INSTALL_HOOK(logger, name) MACRO_WRAP( \
+logger.info("Installing 32 bit hook!"); \
 registerInlineHook((uint32_t)getRealOffset(addr_ ## name), (uint32_t)hook_ ## name, (uint32_t **)&name); \
 inlineHook((uint32_t)getRealOffset(addr_ ## name)); \
 )
 
-#define INSTALL_HOOK_OFFSETLESS(name, methodInfo) MACRO_WRAP( \
-Logger::get().info("Installing 32 bit offsetless hook: %s at %lX", #name, asOffset(methodInfo->methodPointer)); \
+#define INSTALL_HOOK_OFFSETLESS(logger, name, methodInfo) MACRO_WRAP( \
+logger.info("Installing 32 bit offsetless hook: %s at %lX", #name, asOffset(methodInfo->methodPointer)); \
 registerInlineHook((uint32_t)methodInfo->methodPointer, (uint32_t)hook_ ## name, (uint32_t **)&name); \
 inlineHook((uint32_t)methodInfo->methodPointer); \
 )
 
-#define INSTALL_HOOK_NAT(name) MACRO_WRAP( \
-Logger::get().info("Installing 32 bit native hook!"); \
+#define INSTALL_HOOK_NAT(logger, name) MACRO_WRAP( \
+logger.info("Installing 32 bit native hook!"); \
 registerInlineHook((uint32_t)(addr_ ## name), (uint32_t)hook_ ## name, (uint32_t **)&name); \
 inlineHook((uint32_t)(addr_ ## name)); \
 )
 
-#define INSTALL_HOOK_DIRECT(name, addr) MACRO_WRAP( \
-Logger::get().info("Installing 32 bit offsetless hook!"); \
+#define INSTALL_HOOK_DIRECT(logger, name, addr) MACRO_WRAP( \
+logger.info("Installing 32 bit offsetless hook!"); \
 registerInlineHook((uint32_t)addr, (uint32_t)hook_ ## name, (uint32_t **)&name); \
 inlineHook((uint32_t)addr); \
 )
@@ -314,19 +351,19 @@ inlineHook((uint32_t)addr); \
 
 #ifdef __aarch64__
 
-#define INSTALL_HOOK(name) MACRO_WRAP( \
+#define INSTALL_HOOK(logger, name) MACRO_WRAP( \
 A64HookFunction((void*)getRealOffset(addr_ ## name),(void*) hook_ ## name, (void**)&name); \
 )
 
-#define INSTALL_HOOK_OFFSETLESS(name, methodInfo) MACRO_WRAP( \
+#define INSTALL_HOOK_OFFSETLESS(logger, name, methodInfo) MACRO_WRAP( \
 A64HookFunction((void*)methodInfo->methodPointer,(void*) hook_ ## name, (void**)&name); \
 )
 
-#define INSTALL_HOOK_NAT(name) MACRO_WRAP( \
+#define INSTALL_HOOK_NAT(logger, name) MACRO_WRAP( \
 A64HookFunction((void*)(addr_ ## name),(void*) hook_ ## name, (void**)&name); \
 )
 
-#define INSTALL_HOOK_DIRECT(name, addr) MACRO_WRAP( \
+#define INSTALL_HOOK_DIRECT(logger, name, addr) MACRO_WRAP( \
 A64HookFunction((void*)addr, (void*) hook_ ## name, (void**)&name); \
 )
 
@@ -334,40 +371,40 @@ A64HookFunction((void*)addr, (void*) hook_ ## name, (void**)&name); \
 // and sets the hook to call the original function
 // No original trampoline is created when uninstalling a hook, hence the nullptr
 
-#define UNINSTALL_HOOK(name) MACRO_WRAP( \
+#define UNINSTALL_HOOK(logger, name) MACRO_WRAP( \
 A64HookFunction((void*)getRealOffset(addr_ ## name),(void*)name, (void**)nullptr); \
 )
 
-#define UNINSTALL_HOOK_OFFSETLESS(name, methodInfo) MACRO_WRAP( \
+#define UNINSTALL_HOOK_OFFSETLESS(logger, name, methodInfo) MACRO_WRAP( \
 A64HookFunction((void*)methodInfo->methodPointer,(void*)name, (void**)nullptr); \
 )
 
-#define UNINSTALL_HOOK_NAT(name) MACRO_WRAP( \
+#define UNINSTALL_HOOK_NAT(logger, name) MACRO_WRAP( \
 A64HookFunction((void*)(addr_ ## name),(void*)name, (void**)nullptr); \
 )
 
-#define UNINSTALL_HOOK_DIRECT(name, addr) MACRO_WRAP( \
+#define UNINSTALL_HOOK_DIRECT(logger, name, addr) MACRO_WRAP( \
 A64HookFunction((void*)addr, (void*)name, (void**)nullptr); \
 )
 
 #else __aarch64__
 
-#define INSTALL_HOOK(name) MACRO_WRAP( \
+#define INSTALL_HOOK(logger, name) MACRO_WRAP( \
 registerInlineHook((uint32_t)getRealOffset(addr_ ## name), (uint32_t)hook_ ## name, (uint32_t **)&name); \
 inlineHook((uint32_t)getRealOffset(addr_ ## name)); \
 )
 
-#define INSTALL_HOOK_OFFSETLESS(name, methodInfo) MACRO_WRAP( \
+#define INSTALL_HOOK_OFFSETLESS(logger, name, methodInfo) MACRO_WRAP( \
 registerInlineHook((uint32_t)methodInfo->methodPointer, (uint32_t)hook_ ## name, (uint32_t **)&name); \
 inlineHook((uint32_t)methodInfo->methodPointer); \
 )
 
-#define INSTALL_HOOK_NAT(name) MACRO_WRAP( \
+#define INSTALL_HOOK_NAT(logger, name) MACRO_WRAP( \
 registerInlineHook((uint32_t)(addr_ ## name), (uint32_t)hook_ ## name, (uint32_t **)&name); \
 inlineHook((uint32_t)(addr_ ## name)); \
 )
 
-#define INSTALL_HOOK_DIRECT(name, addr) MACRO_WRAP( \
+#define INSTALL_HOOK_DIRECT(logger, name, addr) MACRO_WRAP( \
 registerInlineHook((uint32_t)addr, (uint32_t)hook_ ## name, (uint32_t **)&name); \
 inlineHook((uint32_t)addr); \
 )

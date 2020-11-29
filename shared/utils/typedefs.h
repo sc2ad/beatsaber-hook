@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <type_traits>
+#include <initializer_list>
+
 // from https://gcc.gnu.org/bugzilla//show_bug.cgi?id=71579#c4, leading underscores removed
 namespace std {
     template <class _Tp>
@@ -117,6 +119,10 @@ typedef struct IntPtr {
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif /* __cplusplus */
+
+#include "il2cpp-functions.hpp"
+#include "il2cpp-utils-methods.hpp"
+#include "il2cpp-type-check.hpp"
 
 #if __has_include("System/Array.hpp") && !defined(NO_CODEGEN_USE)
 #define HAS_CODEGEN
@@ -266,8 +272,6 @@ typedef struct DelegateData : Il2CppObject {
     bool curied_first_arg;
 } DelegateData;
 #endif
-
-#include "il2cpp-utils.hpp"
 
 #ifdef HAS_CODEGEN
 #include "System/Collections/Generic/IReadOnlyList_1.hpp"

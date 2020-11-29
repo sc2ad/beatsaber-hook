@@ -196,7 +196,15 @@ void Logger::startConsumer() {
 }
 
 LoggerContextObject Logger::WithContext(std::string_view context) {
-    return LoggerContextObject(*this, context);
+    contextMutex.lock();
+    for (auto& item : disabledContexts) {
+        if (context.starts_with(item)) {
+            contextMutex.unlock();
+            return LoggerContextObject(*this, context, false);
+        }
+    }
+    contextMutex.unlock();
+    return LoggerContextObject(*this, context, true);
 }
 
 void Logger::DisableContext(std::string_view context) {
