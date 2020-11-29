@@ -15,6 +15,9 @@
 #include <mutex>
 #include "modloader/shared/modloader.hpp"
 #include "utils-functions.h"
+#include <thread>
+#include <unordered_set>
+#include <unordered_map>
 
 namespace Logging {
     enum Level {
@@ -74,9 +77,13 @@ class LoggerBuffer {
 struct LoggerOptions {
     bool silent = false;
     bool toFile = false;
-    constexpr LoggerOptions(bool silent_ = false, bool toFile_ = false) : silent(silent_), toFile(toFile_) {}
+    std::string contextSeparator = "::";
+    LoggerOptions(bool silent_ = false, bool toFile_ = false) : silent(silent_), toFile(toFile_) {}
+    LoggerOptions(std::string_view contextSeparator_, bool silent_ = false, bool toFile_ = false) :
+        silent(silent_), toFile(toFile_), contextSeparator(contextSeparator_) {}
 };
 
+class LoggerContextObject;
 class Consumer;
 
 class Logger {
@@ -122,8 +129,33 @@ class Logger {
         constexpr void enable() {
             options.silent = false;
         }
-        LoggerOptions options;
+        /// @brief Returns the current options for this logger
+        const LoggerOptions getOptions() {
+            return options;
+        }
+        /// @brief Enters a logging context. Should be used for more specific logging information.
+        /// @param context The context name to enter
+        /// @returns LoggerContextObject that is destructed to call ExitContext.
+        LoggerContextObject EnterContext(std::string_view context);
+        /// @brief Exits the last entered logging context. Does nothing if there was no context entered.
+        void ExitContext();
+        /// @brief Gets the current logging context.
+        const std::string GetContext() const;
+        /// @brief Disable logging for any contexts that start with the provided string.
+        /// This is thread independent, and will silence across all threads
+        void DisableContext(std::string_view context);
+        /// @brief Enables logging for the context.
+        /// This function does nothing if DisableContext was not called with an exactly matching string before this call.
+        void EnableContext(std::string_view context);
     private:
+        /// @brief The options associated with this logger
+        LoggerOptions options;
+        /// @brief The mapping of thread IDs to contexts for this logger
+        std::unordered_map<std::thread::id, std::string> contextStrings;
+        std::unordered_map<std::thread::id, std::list<std::string>> contextLists;
+        std::unordered_set<std::string> disabledContexts;
+        /// @brief The mutex for the contexts maps/sets
+        std::mutex contextMutex;
         std::string tag;
         const ModInfo modInfo;
         LoggerBuffer& buff;
@@ -133,9 +165,21 @@ class Logger {
 
         static LoggerBuffer& emplace_safe(const ModInfo& info) {
             // Obtain lock
-            std::unique_lock<std::mutex> lck(bufferMutex);
+            bufferMutex.lock();
             // Emplace, lock is released
-            return Logger::buffers.emplace_back(info);
+            auto& itr = Logger::buffers.emplace_back(info);
+            bufferMutex.unlock();
+            return itr;
         }
         static void startConsumer();
+};
+
+class LoggerContextObject {
+    Logger& logger;
+    public:
+    LoggerContextObject(Logger& l) : logger(l) {}
+    ~LoggerContextObject() {
+        // Call ExitContext
+        logger.ExitContext();
+    }
 };

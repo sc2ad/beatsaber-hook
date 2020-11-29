@@ -106,7 +106,7 @@ class Consumer {
         // For each one, we flush our log to the file specified by the path of that buffer.
         while (true) {
             // Lock our bufferMutex
-            std::unique_lock<std::mutex> lock(Logger::bufferMutex);
+            Logger::bufferMutex.lock();
             for (auto& buffer : Logger::buffers) {
                 // For each buffer, we want to flush all of the messages.
                 // However, we want to do so in a fashion that isn't terribly unreasonable.
@@ -116,7 +116,7 @@ class Consumer {
             }
             // Also do the get_global() buffer
             get_global().flush();
-            lock.unlock();
+            Logger::bufferMutex.unlock();
             // Sleep for a bit without the lock to allow other threads to create loggers and add them
             std::this_thread::sleep_for(std::chrono::microseconds(500));
         }
@@ -171,9 +171,10 @@ void Logger::init() const {
 void Logger::flush() const {
     // Flush our buffer.
     // We do this by locking it and reading all of its messages to completion.
-    std::unique_lock<std::mutex> lock(Logger::bufferMutex);
+    Logger::bufferMutex.lock();
     buff.flush();
     get_global().flush();
+    Logger::bufferMutex.unlock();
 }
 
 void Logger::close() const {
@@ -191,11 +192,97 @@ void Logger::startConsumer() {
     }
 }
 
+LoggerContextObject Logger::EnterContext(std::string_view context) {
+    // When we enter a context, we do two things:
+    // 1. We add ourselves to our context list
+    // 2. We recompute our full context string
+    auto tid = std::this_thread::get_id();
+    contextMutex.lock();
+    auto itr = contextLists.find(tid);
+    if (itr == contextLists.end()) {
+        contextLists.emplace(tid, std::list<std::string>()).first->second.emplace_back(context);
+        contextStrings.emplace(tid, context);
+    } else {
+        itr->second.emplace_back(context);
+        // contextStrings.at(tid) MUST exist
+        // We use options.contextSeparator for our separator, default is ::
+        contextStrings.at(tid).append(options.contextSeparator + std::string(context));
+    }
+    contextMutex.unlock();
+    return LoggerContextObject(*this);
+}
+
+void Logger::ExitContext() {
+    // When we leave a context, we need to do two things:
+    // 1. Remove ourselves from our context list
+    // 2. Recompute out full context string
+    auto tid = std::this_thread::get_id();
+    contextMutex.lock();
+    auto itr = contextLists.find(tid);
+    if (itr == contextLists.end()) {
+        // If we aren't in a context, no need to exit the context
+        contextMutex.unlock();
+        return;
+    }
+    if (itr->second.size() == 1) {
+        // If we are only in one context, we can just delete the item
+        contextLists.erase(tid);
+        contextStrings.erase(tid);
+        contextMutex.unlock();
+        return;
+    }
+    // We need to store the length of the last
+    auto size = itr->second.back().size();
+    // Remove last context
+    itr->second.pop_back();
+    auto& fullCtx = contextStrings.at(tid);
+    contextStrings[tid].resize(fullCtx.size() - size - options.contextSeparator.size());
+    contextMutex.unlock();
+}
+
+const std::string Logger::GetContext() const {
+    // Use the current thread ID to determine our context
+    // Because we want to optimize the time it takes to log, and we can be expensive when entering or exiting contexts
+    // We hold BOTH a mapping of thread ID to context lists as well as a mapping of thread ID to context strings
+    // Here, we simply look up the context string
+    // This is an UNLOCKED call for a few reasons
+    // 1. locking here would cause this function (and all callers) to not be const
+    // 2. Race conditions are only applicable for the same TID, which is impossible,
+    // given that the TID in question is either in or not in the map.
+    auto itr = contextStrings.find(std::this_thread::get_id());
+    if (itr != contextStrings.end()) {
+        return itr->second;
+    }
+    static std::string empty("");
+    return empty;
+}
+
+void Logger::DisableContext(std::string_view context) {
+    contextMutex.lock();
+    disabledContexts.emplace(context);
+    contextMutex.unlock();
+}
+
+void Logger::EnableContext(std::string_view context) {
+    contextMutex.lock();
+    auto itr = disabledContexts.find(std::string(context));
+    if (itr != disabledContexts.end()) {
+        disabledContexts.erase(itr);
+    }
+    contextMutex.unlock();
+}
+
 #define LOG_MAX_CHARS 1000
 void Logger::log(Logging::Level lvl, std::string str) const {
     if (options.silent) {
         return;
     }
+    // Add Context as first portion of string, only if necessary
+    auto ctx = GetContext();
+    if (ctx.size() > 0) {
+        str = "(" + GetContext() + ") " + str;
+    }
+    // Chunk string for logcat buffer
     if (str.length() > LOG_MAX_CHARS) {
         std::size_t i = 0;
         while (i < str.length()) {
@@ -228,11 +315,10 @@ void Logger::log(Logging::Level lvl, std::string str) const {
         oss << std::put_time(&bt, "%m-%d %H:%M:%S.") << std::setfill('0') << std::setw(3) << ms.count();
         auto msg = oss.str() + " " + get_level(lvl) + " " + tag + ": " + str.c_str();
         // __android_log_print(Logging::DEBUG, tag.c_str(), "Logging message: %s to file!", msg.c_str());
-        {
-            std::unique_lock<std::mutex> lock(Logger::bufferMutex);
-            buff.addMessage(msg);
-            get_global().addMessage(msg);
-        }
+        Logger::bufferMutex.lock();
+        buff.addMessage(msg);
+        get_global().addMessage(msg);
+        Logger::bufferMutex.unlock();
         startConsumer();
     }
 }
