@@ -200,7 +200,8 @@ LoggerContextObject Logger::WithContext(std::string_view context) {
     for (auto& item : disabledContexts) {
         if (context.starts_with(item)) {
             contextMutex.unlock();
-            return LoggerContextObject(*this, context, false);
+            // If I am silent, my context objects are also silent.
+            return LoggerContextObject(*this, context, options.silent);
         }
     }
     contextMutex.unlock();
@@ -220,6 +221,10 @@ void Logger::EnableContext(std::string_view context) {
         disabledContexts.erase(itr);
     }
     contextMutex.unlock();
+}
+
+const std::unordered_set<std::string> Logger::GetDisabledContexts() {
+    return disabledContexts;
 }
 
 #define LOG_MAX_CHARS 1000

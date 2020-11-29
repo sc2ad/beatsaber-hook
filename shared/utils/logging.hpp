@@ -145,6 +145,9 @@ class Logger {
         /// @brief Enables logging for the context.
         /// This function does nothing if DisableContext was not called with an exactly matching string before this call.
         void EnableContext(std::string_view context);
+        /// @brief Gets all disabled contexts on this instance.
+        /// @returns The set of disabled context strings.
+        const std::unordered_set<std::string> GetDisabledContexts();
     private:
         /// @brief The options associated with this logger
         LoggerOptions options;
