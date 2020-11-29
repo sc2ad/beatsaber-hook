@@ -46,10 +46,9 @@ class Logger;
 /// Each buffer contains multiple messages that need to be written out, stored as an std::list
 class LoggerBuffer {
     friend Logger;
-    private:
-    std::string path;
     public:
     std::list<std::string> messages;
+    std::mutex messageLock;
     const ModInfo modInfo;
     bool closed = false;
     static std::string get_logDir() {
@@ -65,11 +64,11 @@ class LoggerBuffer {
     }
     std::size_t length();
     void addMessage(std::string_view msg);
-    public:
     void flush();
-    LoggerBuffer(const ModInfo info) : modInfo(info) {
-        path = get_path();
-    }
+    private:
+    std::string path;
+    public:
+    LoggerBuffer(const ModInfo info) : modInfo(info), path(get_path()) {}
 };
 
 /// @struct Logger Options
@@ -91,23 +90,26 @@ class Logger {
     friend LoggerBuffer;
     friend LoggerContextObject;
     public:
-        Logger(const ModInfo info, LoggerOptions options_) : options(options_), modInfo(info), buff(emplace_safe(modInfo)) {
+        Logger(const ModInfo info, LoggerOptions options_) : options(options_), modInfo(info), buffer(modInfo) {
             tag = "QuestHook[" + info.id + "|v" + info.version + "]";
-            init();
+            if (!init()) {
+                buffer.closed = true;
+            }
+            emplace_safe(buffer);
         }
         Logger(const ModInfo info) : Logger(info, LoggerOptions{false, false}) {}
-        void log(Logging::Level lvl, std::string str) const;
-        void log(Logging::Level lvl, std::string_view fmt, ...) const;
-        void critical(std::string_view fmt, ...) const;
-        void error(std::string_view fmt, ...) const;
-        void warning(std::string_view fmt, ...) const;
-        void info(std::string_view fmt, ...) const;
-        void debug(std::string_view fmt, ...) const;
+        void log(Logging::Level lvl, std::string str);
+        void log(Logging::Level lvl, std::string_view fmt, ...);
+        void critical(std::string_view fmt, ...);
+        void error(std::string_view fmt, ...);
+        void warning(std::string_view fmt, ...);
+        void info(std::string_view fmt, ...);
+        void debug(std::string_view fmt, ...);
         /// @brief Flushes the buffer for this logger instance.
-        void flush() const;
+        void flush();
         /// @brief Closes the buffer for this logger instance, flushing as necessary.
         /// After this call, this logger will no longer log to a buffer, nor will it log to a file.
-        void close() const;
+        void close();
         /// @brief Returns the logger that is used within the utils library. This function should not be used outside of the main library
         static Logger& get();
         /// @brief Close all open LoggerBuffer objects. Should only be called on a crash or exit of the game.
@@ -117,7 +119,8 @@ class Logger {
         /// @brief Initialize this logger. Deletes existing file logs.
         /// This happens on default when this instance is constructed.
         /// This should also be called anytime the options field is modified.
-        void init() const;
+        /// @returns True if the initialization was successful, false otherwise. If false is returned, you should set buffer.closed to true.
+        bool init() const;
         /// @brief Call this to silence logs from this logger. Should improve performance slightly.
         /// Note that this call causes ALL calls to this particular logger to be silent, including from other mods.
         /// Should only be used in particular cases.
@@ -156,18 +159,17 @@ class Logger {
         std::mutex contextMutex;
         std::string tag;
         const ModInfo modInfo;
-        LoggerBuffer& buff;
+        LoggerBuffer buffer;
         static bool consumerStarted;
-        static std::vector<LoggerBuffer> buffers;
+        static std::list<LoggerBuffer*> buffers;
         static std::mutex bufferMutex;
 
-        static LoggerBuffer& emplace_safe(const ModInfo& info) {
+        static void emplace_safe(LoggerBuffer& buffer) {
             // Obtain lock
             bufferMutex.lock();
             // Emplace, lock is released
-            auto& itr = Logger::buffers.emplace_back(info);
+            Logger::buffers.push_back(&buffer);
             bufferMutex.unlock();
-            return itr;
         }
         static void startConsumer();
 };

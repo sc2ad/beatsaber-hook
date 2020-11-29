@@ -19,7 +19,7 @@
 #define VERSION "0.0.0"
 #endif
 
-std::vector<LoggerBuffer> Logger::buffers;
+std::list<LoggerBuffer*> Logger::buffers;
 bool Logger::consumerStarted = false;
 std::mutex Logger::bufferMutex;
 
@@ -57,7 +57,7 @@ LoggerBuffer& get_global() {
 
 Logger& Logger::get() {
     // UtilsLogger will (by default) log to file.
-    static Logger utilsLogger(ModInfo{"UtilsLogger", VERSION}, LoggerOptions(false, false));
+    static Logger utilsLogger(ModInfo{"UtilsLogger", VERSION}, LoggerOptions(false, true));
     return utilsLogger;
 }
 
@@ -74,9 +74,11 @@ void LoggerBuffer::flush() {
     // Then, iterate over all messages and write each of them to the file.
     // We already must hold the lock for this call.
     // Assuming we always append to the END of the list, we could theoretically get away without locking on this call (except for length 1)
+    messageLock.lock();
     for (; !messages.empty(); messages.pop_front()) {
         file << messages.front().c_str() << '\n';
     }
+    messageLock.unlock();
     file.close();
 }
 
@@ -92,7 +94,9 @@ void LoggerBuffer::addMessage(std::string_view msg) {
     if (closed) {
         return;
     }
+    messageLock.lock();
     messages.emplace_back(msg.data());
+    messageLock.unlock();
 }
 
 // Now, we COULD be a lot more reasonable and spawn a thread for each buffer logger
@@ -107,10 +111,10 @@ class Consumer {
         while (true) {
             // Lock our bufferMutex
             Logger::bufferMutex.lock();
-            for (auto& buffer : Logger::buffers) {
+            for (auto* buffer : Logger::buffers) {
                 // For each buffer, we want to flush all of the messages.
                 // However, we want to do so in a fashion that isn't terribly unreasonable.
-                buffer.flush();
+                buffer->flush();
                 // Ideally, we thread_yield after each buffer flush (may not need to, though)
                 // std::this_thread::yield();
             }
@@ -126,8 +130,8 @@ class Consumer {
 void Logger::flushAll() {
     __android_log_write(Logging::CRITICAL, Logger::get().tag.c_str(), "Flushing all buffers!");
     Logger::bufferMutex.lock();
-    for (auto& buffer : Logger::buffers) {
-        buffer.flush();
+    for (auto* buffer : Logger::buffers) {
+        buffer->flush();
     }
     get_global().flush();
     Logger::bufferMutex.unlock();
@@ -137,9 +141,9 @@ void Logger::flushAll() {
 void Logger::closeAll() {
     __android_log_write(Logging::CRITICAL, Logger::get().tag.c_str(), "Closing all buffers!");
     Logger::bufferMutex.lock();
-    for (auto& buffer : Logger::buffers) {
-        buffer.flush();
-        buffer.closed = true;
+    for (auto* buffer : Logger::buffers) {
+        buffer->flush();
+        buffer->closed = true;
     }
     get_global().flush();
     get_global().closed = true;
@@ -147,43 +151,44 @@ void Logger::closeAll() {
     __android_log_write(Logging::CRITICAL, Logger::get().tag.c_str(), "All buffers closed!");
 }
 
-void Logger::init() const {
+bool Logger::init() const {
     // So, we want to take a look at our options.
     // If we have fileLog set to true, we want to clear the file pointed to by this log.
     // That means that we want to delete the existing file (because storing a bunch is pretty obnoxious)
     if (options.toFile) {
-        if (fileexists(buff.path)) {
-            deletefile(buff.path);
+        if (fileexists(buffer.path)) {
+            deletefile(buffer.path);
         }
         // Now, create the file and paths as necessary.
-        if (!direxists(buff.get_logDir())) {
-            mkpath(buff.get_logDir());
-            __android_log_print(Logging::INFO, tag.c_str(), "Created logger buffer dir: %s", buff.get_logDir().c_str());
+        if (!direxists(buffer.get_logDir())) {
+            mkpath(buffer.get_logDir());
+            __android_log_print(Logging::INFO, tag.c_str(), "Created logger buffer dir: %s", buffer.get_logDir().c_str());
         }
-        std::ofstream str(buff.path);
+        std::ofstream str(buffer.path);
         if (!str.is_open()) {
-            __android_log_print(Logging::CRITICAL, tag.c_str(), "Could not open logger buffer file: %s!", buff.path.c_str());
-            buff.closed = true;
+            __android_log_print(Logging::CRITICAL, tag.c_str(), "Could not open logger buffer file: %s!", buffer.path.c_str());
+            return false;
         } else {
             str.close();
         }
     }
+    return true;
 }
 
-void Logger::flush() const {
+void Logger::flush() {
     // Flush our buffer.
     // We do this by locking it and reading all of its messages to completion.
     Logger::bufferMutex.lock();
-    buff.flush();
+    buffer.flush();
     get_global().flush();
     Logger::bufferMutex.unlock();
 }
 
-void Logger::close() const {
+void Logger::close() {
     Logger::bufferMutex.lock();
-    buff.flush();
+    buffer.flush();
     get_global().flush();
-    buff.closed = true;
+    buffer.closed = true;
     Logger::bufferMutex.unlock();
 }
 
@@ -228,7 +233,7 @@ const std::unordered_set<std::string> Logger::GetDisabledContexts() {
 }
 
 #define LOG_MAX_CHARS 1000
-void Logger::log(Logging::Level lvl, std::string str) const {
+void Logger::log(Logging::Level lvl, std::string str) {
     if (options.silent) {
         return;
     }
@@ -266,14 +271,14 @@ void Logger::log(Logging::Level lvl, std::string str) const {
         auto msg = oss.str() + " " + get_level(lvl) + " " + tag + ": " + str.c_str();
         // __android_log_print(Logging::DEBUG, tag.c_str(), "Logging message: %s to file!", msg.c_str());
         Logger::bufferMutex.lock();
-        buff.addMessage(msg);
+        buffer.addMessage(msg);
         get_global().addMessage(msg);
         Logger::bufferMutex.unlock();
         startConsumer();
     }
 }
 
-void Logger::log(Logging::Level lvl, std::string_view fmt, ...) const {
+void Logger::log(Logging::Level lvl, std::string_view fmt, ...) {
     if (options.silent) {
         return;
     }
@@ -284,7 +289,7 @@ void Logger::log(Logging::Level lvl, std::string_view fmt, ...) const {
     log(lvl, s);
 }
 
-void Logger::critical(std::string_view fmt, ...) const {
+void Logger::critical(std::string_view fmt, ...) {
     if (options.silent) {
         return;
     }
@@ -295,7 +300,7 @@ void Logger::critical(std::string_view fmt, ...) const {
     log(Logging::CRITICAL, s);
 }
 
-void Logger::error(std::string_view fmt, ...) const {
+void Logger::error(std::string_view fmt, ...) {
     if (options.silent) {
         return;
     }
@@ -306,7 +311,7 @@ void Logger::error(std::string_view fmt, ...) const {
     log(Logging::ERROR, s);
 }
 
-void Logger::warning(std::string_view fmt, ...) const {
+void Logger::warning(std::string_view fmt, ...) {
     if (options.silent) {
         return;
     }
@@ -317,7 +322,7 @@ void Logger::warning(std::string_view fmt, ...) const {
     log(Logging::WARNING, s);
 }
 
-void Logger::info(std::string_view fmt, ...) const {
+void Logger::info(std::string_view fmt, ...) {
     if (options.silent) {
         return;
     }
@@ -328,7 +333,7 @@ void Logger::info(std::string_view fmt, ...) const {
     log(Logging::INFO, s);
 }
 
-void Logger::debug(std::string_view fmt, ...) const {
+void Logger::debug(std::string_view fmt, ...) {
     if (options.silent) {
         return;
     }
