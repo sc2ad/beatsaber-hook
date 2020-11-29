@@ -130,17 +130,13 @@ class Logger {
             options.silent = false;
         }
         /// @brief Returns the current options for this logger
-        const LoggerOptions getOptions() {
+        const LoggerOptions getOptions() const {
             return options;
         }
         /// @brief Enters a logging context. Should be used for more specific logging information.
         /// @param context The context name to enter
-        /// @returns LoggerContextObject that is destructed to call ExitContext.
-        LoggerContextObject EnterContext(std::string_view context);
-        /// @brief Exits the last entered logging context. Does nothing if there was no context entered.
-        void ExitContext();
-        /// @brief Gets the current logging context.
-        const std::string GetContext() const;
+        /// @returns LoggerContextObject that is used within the context.
+        LoggerContextObject WithContext(std::string_view context);
         /// @brief Disable logging for any contexts that start with the provided string.
         /// This is thread independent, and will silence across all threads
         void DisableContext(std::string_view context);
@@ -150,9 +146,6 @@ class Logger {
     private:
         /// @brief The options associated with this logger
         LoggerOptions options;
-        /// @brief The mapping of thread IDs to contexts for this logger
-        std::unordered_map<std::thread::id, std::string> contextStrings;
-        std::unordered_map<std::thread::id, std::list<std::string>> contextLists;
         std::unordered_set<std::string> disabledContexts;
         /// @brief The mutex for the contexts maps/sets
         std::mutex contextMutex;
@@ -175,11 +168,53 @@ class Logger {
 };
 
 class LoggerContextObject {
-    Logger& logger;
+    std::string tag;
     public:
-    LoggerContextObject(Logger& l) : logger(l) {}
-    ~LoggerContextObject() {
-        // Call ExitContext
-        logger.ExitContext();
+    /// @brief a const Logger reference. If you wish to modify the original logger, modify it before calling .WithContext
+    const Logger& logger;
+    /// @brief The context of this LoggerContextObject
+    const std::string context;
+    LoggerContextObject(const Logger& l, std::string_view context_) : logger(l), context(context_) {
+        tag.append("(").append(context_).append(") ");
+    }
+    // Cannot copy a context object
+    LoggerContextObject(const LoggerContextObject&) = delete;
+    // Can move a context object
+    LoggerContextObject(LoggerContextObject&& other) = default;
+    // Can delete a context object
+    ~LoggerContextObject() = default;
+
+    void log(Logging::Level lvl, std::string str) const {
+        logger.log(lvl, tag + str);
+    }
+    template<typename... TArgs>
+    void log(Logging::Level lvl, std::string_view fmt, TArgs... args) const {
+        logger.log(lvl, tag + fmt.data(), args...);
+    }
+    template<typename... TArgs>
+    void critical(std::string_view fmt, TArgs... args) const {
+        logger.critical(tag + fmt.data(), args...);
+    }
+    template<typename... TArgs>
+    void error(std::string_view fmt, TArgs... args) const {
+        logger.error(tag + fmt.data(), args...);
+    }
+    template<typename... TArgs>
+    void warning(std::string_view fmt, TArgs... args) const {
+        logger.warning(tag + fmt.data(), args...);
+    }
+    template<typename... TArgs>
+    void info(std::string_view fmt, TArgs... args) const {
+        logger.info(tag + fmt.data(), args...);
+    }
+    template<typename... TArgs>
+    void debug(std::string_view fmt, TArgs... args) const {
+        logger.debug(tag + fmt.data(), args...);
+    }
+    /// @brief Enter a new context. The context entered is separated by logger.options.contextSeparator
+    /// @param ctx The context name to enter
+    /// @returns The LoggerContextObject in the context
+    LoggerContextObject WithContext(std::string_view ctx) {
+        return LoggerContextObject(logger, context + logger.getOptions().contextSeparator + std::string(ctx));
     }
 };
