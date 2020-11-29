@@ -125,23 +125,25 @@ class Consumer {
 
 void Logger::flushAll() {
     __android_log_write(Logging::CRITICAL, Logger::get().tag.c_str(), "Flushing all buffers!");
-    std::unique_lock<std::mutex> lock(Logger::bufferMutex);
+    Logger::bufferMutex.lock();
     for (auto& buffer : Logger::buffers) {
         buffer.flush();
     }
     get_global().flush();
+    Logger::bufferMutex.unlock();
     __android_log_write(Logging::CRITICAL, Logger::get().tag.c_str(), "All buffers flushed!");
 }
 
 void Logger::closeAll() {
     __android_log_write(Logging::CRITICAL, Logger::get().tag.c_str(), "Closing all buffers!");
-    std::unique_lock<std::mutex> lock(Logger::bufferMutex);
+    Logger::bufferMutex.lock();
     for (auto& buffer : Logger::buffers) {
         buffer.flush();
         buffer.closed = true;
     }
     get_global().flush();
     get_global().closed = true;
+    Logger::bufferMutex.unlock();
     __android_log_write(Logging::CRITICAL, Logger::get().tag.c_str(), "All buffers closed!");
 }
 
@@ -178,10 +180,11 @@ void Logger::flush() const {
 }
 
 void Logger::close() const {
-    std::unique_lock<std::mutex> lock(Logger::bufferMutex);
+    Logger::bufferMutex.lock();
     buff.flush();
     get_global().flush();
     buff.closed = true;
+    Logger::bufferMutex.unlock();
 }
 
 void Logger::startConsumer() {
