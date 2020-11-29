@@ -252,11 +252,16 @@ const std::string Logger::GetContext() const {
     // 1. locking here would cause this function (and all callers) to not be const
     // 2. Race conditions are only applicable for the same TID, which is impossible,
     // given that the TID in question is either in or not in the map.
+    static std::string empty("");
     auto itr = contextStrings.find(std::this_thread::get_id());
     if (itr != contextStrings.end()) {
+        for (auto& item : disabledContexts) {
+            if (itr->second.starts_with(item)) {
+                return empty;
+            }
+        }
         return itr->second;
     }
-    static std::string empty("");
     return empty;
 }
 
