@@ -16,6 +16,7 @@ namespace std {
 #endif
 #include <thread>
 #include <optional>
+#include "hook-tracker.hpp"
 
 // For use in SAFE_ABORT/CRASH_UNLESS (& RET_UNLESS if possible)
 #if __has_include(<source_location>)
@@ -278,21 +279,25 @@ retval hook_ ## name(__VA_ARGS__)
 #define INSTALL_HOOK(logger, name) MACRO_WRAP( \
 logger.info("Installing 64 bit hook: %s", #name); \
 A64HookFunction((void*)getRealOffset(addr_ ## name),(void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, (void*)getRealOffset(addr_ ## name), (void*) hook_ ## name, (void**)&name); \
 )
 
 #define INSTALL_HOOK_OFFSETLESS(logger, name, methodInfo) MACRO_WRAP( \
 logger.info("Installing 64 bit offsetless hook: %s at %lX", #name, asOffset(methodInfo->methodPointer)); \
 A64HookFunction((void*)methodInfo->methodPointer,(void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, (void*)methodInfo->methodPointer, (void*) hook_ ## name, (void**)&name); \
 )
 
 #define INSTALL_HOOK_NAT(logger, name) MACRO_WRAP( \
 logger.info("Installing 64 bit native hook: %s", #name); \
 A64HookFunction((void*)(addr_ ## name),(void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, (void*)(addr_ ## name), (void*) hook_ ## name, (void**)&name); \
 )
 
 #define INSTALL_HOOK_DIRECT(logger, name, addr) MACRO_WRAP( \
 logger.info("Installing 64 bit direct hook: %s", #name); \
 A64HookFunction((void*)addr, (void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, (void*)addr, (void*) hook_ ## name, (void**)&name); \
 )
 
 // Uninstalls currently just creates a hook at the hooked address
@@ -302,24 +307,30 @@ A64HookFunction((void*)addr, (void*) hook_ ## name, (void**)&name); \
 #define UNINSTALL_HOOK(logger, name) MACRO_WRAP( \
 logger.info("Uninstalling 64 bit hook: %s", #name); \
 A64HookFunction((void*)getRealOffset(addr_ ## name),(void*)name, (void**)nullptr); \
+HookTracker::RemoveHook(#name, (void*)getRealOffset(addr_ ## name), (void*) hook_ ## name, (void**)&name); \
 )
 
 #define UNINSTALL_HOOK_OFFSETLESS(logger, name, methodInfo) MACRO_WRAP( \
 logger.info("Uninstalling 64 bit offsetless hook: %s at %lX", #name, asOffset(methodInfo->methodPointer)); \
 A64HookFunction((void*)methodInfo->methodPointer,(void*)name, (void**)nullptr); \
+HookTracker::RemoveHook(#name, (void*)methodInfo->methodPointer, (void*) hook_ ## name, (void**)&name); \
 )
 
 #define UNINSTALL_HOOK_NAT(logger, name) MACRO_WRAP( \
 logger.info("Uninstalling 64 bit native hook: %s", #name); \
 A64HookFunction((void*)(addr_ ## name),(void*)name, (void**)nullptr); \
+HookTracker::RemoveHook(#name, (void*)(addr_ ## name), (void*) hook_ ## name, (void**)&name); \
 )
 
 #define UNINSTALL_HOOK_DIRECT(logger, name, addr) MACRO_WRAP( \
 logger.info("Uninstalling 64 bit direct hook: %s", #name); \
 A64HookFunction((void*)addr, (void*)name, (void**)nullptr); \
+HookTracker::RemoveHook(#name, (void*)addr, (void*) hook_ ## name, (void**)&name); \
 )
 
 #else
+
+// TODO: Add HookTracker for 32 bit hooks
 
 #define INSTALL_HOOK(logger, name) MACRO_WRAP( \
 logger.info("Installing 32 bit hook!"); \
@@ -353,18 +364,22 @@ inlineHook((uint32_t)addr); \
 
 #define INSTALL_HOOK(logger, name) MACRO_WRAP( \
 A64HookFunction((void*)getRealOffset(addr_ ## name),(void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, (void*)getRealOffset(addr_ ## name), (void*) hook_ ## name, (void**)&name); \
 )
 
 #define INSTALL_HOOK_OFFSETLESS(logger, name, methodInfo) MACRO_WRAP( \
 A64HookFunction((void*)methodInfo->methodPointer,(void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, (void*)methodInfo->methodPointer, (void*) hook_ ## name, (void**)&name); \
 )
 
 #define INSTALL_HOOK_NAT(logger, name) MACRO_WRAP( \
 A64HookFunction((void*)(addr_ ## name),(void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, (void*)(addr_ ## name), (void*) hook_ ## name, (void**)&name); \
 )
 
 #define INSTALL_HOOK_DIRECT(logger, name, addr) MACRO_WRAP( \
 A64HookFunction((void*)addr, (void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, (void*)addr, (void*) hook_ ## name, (void**)&name); \
 )
 
 // Uninstalls currently just creates a hook at the hooked address
@@ -373,21 +388,25 @@ A64HookFunction((void*)addr, (void*) hook_ ## name, (void**)&name); \
 
 #define UNINSTALL_HOOK(logger, name) MACRO_WRAP( \
 A64HookFunction((void*)getRealOffset(addr_ ## name),(void*)name, (void**)nullptr); \
+HookTracker::RemoveHook(#name, (void*)getRealOffset(addr_ ## name), (void*) hook_ ## name, (void**)&name); \
 )
 
 #define UNINSTALL_HOOK_OFFSETLESS(logger, name, methodInfo) MACRO_WRAP( \
 A64HookFunction((void*)methodInfo->methodPointer,(void*)name, (void**)nullptr); \
+HookTracker::RemoveHook(#name, (void*)methodInfo->methodPointer, (void*) hook_ ## name, (void**)&name); \
 )
 
 #define UNINSTALL_HOOK_NAT(logger, name) MACRO_WRAP( \
 A64HookFunction((void*)(addr_ ## name),(void*)name, (void**)nullptr); \
+HookTracker::RemoveHook(#name, (void*)(addr_ ## name), (void*) hook_ ## name, (void**)&name); \
 )
 
 #define UNINSTALL_HOOK_DIRECT(logger, name, addr) MACRO_WRAP( \
 A64HookFunction((void*)addr, (void*)name, (void**)nullptr); \
+HookTracker::RemoveHook(#name, (void*)addr, (void*) hook_ ## name, (void**)&name); \
 )
 
-#else __aarch64__
+#else /* __aarch64__ */
 
 #define INSTALL_HOOK(logger, name) MACRO_WRAP( \
 registerInlineHook((uint32_t)getRealOffset(addr_ ## name), (uint32_t)hook_ ## name, (uint32_t **)&name); \
