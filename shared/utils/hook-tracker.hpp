@@ -4,6 +4,7 @@
 #include <list>
 #include <unordered_map>
 
+/// @brief Stores information about an installed hook.
 struct HookInfo {
     const std::string name;
     void* const destination;
