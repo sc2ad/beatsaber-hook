@@ -19,41 +19,25 @@ jobs:
     - name: Install Powershell
       run: sudo apt-get install -y powershell
     
-    - name: Cache Android NDK
-      id: cache-ndk
-      uses: actions/cache@v2
-      env:
-        cache-name: cache-ndk
+    - name: Setup NDK
+      id: setup-ndk
+      uses: nttld/setup-ndk@v1.0.3
       with:
-        path: ndk
-        key: ${{ runner.os }}-${{ env.cache-name }}
-        restore-keys: |
-          ${{ runner.os }}-${{ env.cache-name }}
-      
-    - name: Install Android NDK
-      if: steps.cache-ndk.outputs.cache-hit != 'true'
-      env:
-        ndkname: android-ndk-r20
-      run: |
-        wget -q -O ndk.zip https://dl.google.com/android/repository/${ndkname}-linux-x86_64.zip
-        unzip -q ndk.zip
-        mv ${ndkname} ndk
+        ndk-version: r21
       
     - name: Create ndkpath.txt
-      run: |
-        cd ndk
-        pwd > ${GITHUB_WORKSPACE}/ndkpath.txt
+      run: echo ${{ steps.setup-ndk.outputs.ndk-path }} > ${GITHUB_WORKSPACE}/ndkpath.txt
         
-    - name: Cache QPM
-      id: cache-qpm
-      uses: actions/cache@v2
-      env:
-        cache-name: cache-qpm
-      with:
-        path: QPM
-        key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('QPM/*') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('QPM/*') }}
+#     - name: Cache QPM
+#       id: cache-qpm
+#       uses: actions/cache@v2
+#       env:
+#         cache-name: cache-qpm
+#       with:
+#         path: QPM
+#         key: ${{ runner.os }}-${{ env.cache-name }}-2
+#         restore-keys: |
+#           ${{ runner.os }}-${{ env.cache-name }}-2
 
     - name: Get QPM
       if: steps.cache-qpm.outputs.cache-hit != 'true'
@@ -65,35 +49,46 @@ jobs:
         path: QPM
         repo: sc2ad/QuestPackageManager
         
-        # TODO Add this:
 #     - name: QPM Dependencies Cache
 #       id: cache-qpm-deps
 #       uses: actions/cache@v2
 #       env:
 #         cache-name: cache-qpm-deps
 #       with:
-#         path: ${GITHUB_WORKSPACE}/extern
-#         key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('${GITHUB_WORKSPACE}/extern/*') }}
+#         path: ~/.config/QPM
+#         key: ${{ runner.os }}-${{ env.cache-name }}
 #         restore-keys: |
-#           ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('${GITHUB_WORKSPACE}/extern/*') }}
+#           ${{ runner.os }}-${{ env.cache-name }}
       
     - name: QPM Restore
-      if: steps.cache-qpm-deps.outputs.cache-hit != 'true'
+#       if: steps.cache-qpm-deps.outputs.cache-hit != 'true'
       run: |
         chmod +x ./QPM/QPM
         ./QPM/QPM restore
+    - name: test
+      run: |
+        ls ./QPM/QPM_Temp
     - name: Build
       run: |
         cd ${GITHUB_WORKSPACE}
         pwsh -Command ./build.ps1
+    - name: Get Library Name
+      id: libname
+      run: |
+        cd ./libs/arm64-v8a/
+        pattern="libbeatsaber-hook*.so"
+        files=( $pattern )
+        echo ::set-output name=NAME::"${files[0]}"
     - name: Upload non-debug artifact
       uses: actions/upload-artifact@v2
       with:
-        name: libbeatsaber-hook.so
-        path: ${GITHUB_WORKSPACE}/libs/arm64-v8a/libbeatsaber-hook.so
+        name: ${{ steps.libname.outputs.NAME }}
+        path: ./libs/arm64-v8a/${{ steps.libname.outputs.NAME }}
+        if-no-files-found: error
     - name: Upload debug artifact
       uses: actions/upload-artifact@v2
       with:
-        name: libbeatsaber-hook_debug.so
-        path: ${GITHUB_WORKSPACE}/obj/local/arm64-v8a/libbeatsaber-hook.so
+        name: debug_${{ steps.libname.outputs.NAME }}
+        path: ./obj/local/arm64-v8a/${{ steps.libname.outputs.NAME }}
+        if-no-files-found: error
     # TODO: Add auto-populating releases, auto update versions, auto publish package on release
