@@ -253,6 +253,11 @@ class LoggerContextObject {
         if (parentContext) {
             parentContext->childrenContexts.remove(this);
         }
+        // Remove ourselves from logger.contexts
+        logger.contextMutex.lock();
+        logger.contexts.remove(*this);
+        logger.contextMutex.unlock();
+        __android_log_print(Logging::DEBUG, "QuestHook[Logging]", "Destroyed LoggerContextObject: %s!", context.c_str());
     }
 
     void log(Logging::Level lvl, std::string str) const {
