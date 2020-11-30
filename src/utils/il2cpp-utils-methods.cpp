@@ -285,9 +285,6 @@ namespace il2cpp_utils {
                     logger.debug("to (%s, %p) is ref/out while from (%s, %p) is not. Not convertible.",
                         TypeGetSimpleName(to), to, TypeGetSimpleName(from), from);
                     return false;
-                } else {
-                    logger.debug("to (%s, %p) and from (%s, %p) are both ret/out. May be convertible.",
-                        TypeGetSimpleName(to), to, TypeGetSimpleName(from), from);
                 }
             }
         }
@@ -296,10 +293,7 @@ namespace il2cpp_utils {
         auto classFrom = il2cpp_functions::class_from_il2cpp_type(from);
         bool ret = (to->type == IL2CPP_TYPE_MVAR) || il2cpp_functions::class_is_assignable_from(classTo, classFrom);
         if (!ret) {
-            logger.debug("class_is_assignable_from(%s, %s) returned %s",
-                ClassStandardName(classTo).c_str(), ClassStandardName(classFrom).c_str(), ret ? "true" : "false");
             if (il2cpp_functions::class_is_enum(classTo)) {
-                logger.debug("but classTo is enum! Comparing against class_enum_basetype.");
                 ret = IsConvertible(il2cpp_functions::class_enum_basetype(classTo), from, asArgs);
             }
         }
