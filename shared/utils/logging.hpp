@@ -153,7 +153,7 @@ class Logger {
         /// Avoid entering contexts with names that contain % characters.
         /// @param context The context name to enter
         /// @returns LoggerContextObject that is used within the context.
-        LoggerContextObject& WithContext(std::string_view context);
+        LoggerContextObject WithContext(std::string_view context);
         /// @brief Disable logging for any contexts that start with the provided string.
         /// This is thread independent, and will silence across all threads
         void DisableContext(std::string_view context);
@@ -169,6 +169,7 @@ class Logger {
 
         std::unordered_set<std::string> disabledContexts;
         /// @brief All created contexts for this instance
+        /// TODO: Currently unused.
         std::list<LoggerContextObject> contexts;
         /// @brief The mutex for the contexts maps/sets
         std::mutex contextMutex;
@@ -184,7 +185,7 @@ class Logger {
         static std::mutex bufferMutex;
 
         /// @brief Constructs a context with a parent. This is called by LoggerContextObject.WithContext.
-        LoggerContextObject& WithContext(LoggerContextObject* parent, std::string_view context);
+        LoggerContextObject WithContext(LoggerContextObject* parent, std::string_view context);
         /// @brief Recurses over all children contexts and disables/enables if they start with context.
         void RecurseChangeContext(LoggerContextObject* ctx, std::string_view context, bool enable);
 
@@ -254,9 +255,9 @@ class LoggerContextObject {
             parentContext->childrenContexts.remove(this);
         }
         // Remove ourselves from logger.contexts
-        logger.contextMutex.lock();
-        logger.contexts.remove(*this);
-        logger.contextMutex.unlock();
+        // logger.contextMutex.lock();
+        // logger.contexts.remove(*this);
+        // logger.contextMutex.unlock();
         __android_log_print(Logging::DEBUG, "QuestHook[Logging]", "Destroyed LoggerContextObject: %s!", context.c_str());
     }
 
@@ -305,8 +306,8 @@ class LoggerContextObject {
     /// Avoid entering contexts with names that contain % characters.
     /// @param ctx The context name to enter
     /// @returns The LoggerContextObject in the context
-    LoggerContextObject& WithContext(std::string_view ctx) {
-        auto& tmp = logger.WithContext(this, ctx);
+    LoggerContextObject WithContext(std::string_view ctx) {
+        auto tmp = logger.WithContext(this, ctx);
         // Copy over enabled
         tmp.enabled = enabled;
         return tmp;

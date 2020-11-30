@@ -14,7 +14,7 @@ namespace il2cpp_utils {
         void* val = obj;
         // nullptr (which runtime_invoke returns for "void" return type!) is different from nullopt (a runtime_invoke error!)
         if (obj && il2cpp_functions::class_is_valuetype(il2cpp_functions::object_get_class(obj))) {
-            static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("FromIl2CppObject");
+            static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("FromIl2CppObject");
             val = RET_NULLOPT_UNLESS(logger, il2cpp_functions::object_unbox(obj));
         }
         if constexpr (::std::is_pointer_v<TOut>) {
@@ -69,7 +69,7 @@ namespace il2cpp_utils {
     Il2CppClass* ExtractClass(T&& arg) {
         using Dt = ::std::decay_t<T>;
         using arg_class = il2cpp_type_check::il2cpp_arg_class<Dt>;
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("ExtractClass");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("ExtractClass");
         Il2CppClass* klass = arg_class::get(arg);
         if (!klass) {
             logger.error("Failed to determine class! Tips: instead of nullptr, pass the Il2CppType* or Il2CppClass* of the argument instead!");
@@ -80,7 +80,7 @@ namespace il2cpp_utils {
     template<class T, bool ResultRequired = false>
     Il2CppClass* NoArgClass() {
         // TODO: change ifndef HAS_CODEGEN to 'if compile warnings are not errors'?
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("NoArgClass");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("NoArgClass");
         #ifndef HAS_CODEGEN
         using arg_class = il2cpp_type_check::il2cpp_no_arg_class<T>;
         if constexpr (!has_get<arg_class>) {
@@ -101,7 +101,7 @@ namespace il2cpp_utils {
 
     template<typename T>
     const Il2CppType* ExtractType(T&& arg) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("ExtractType");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("ExtractType");
         const Il2CppType* typ = il2cpp_type_check::il2cpp_arg_type<T>::get(arg);
         if (!typ)
             logger.error("ExtractType: failed to determine type! Tips: instead of nullptr, pass the Il2CppType* or Il2CppClass* of the argument instead!");
@@ -111,7 +111,7 @@ namespace il2cpp_utils {
     // Like ExtractType, but only returns an Il2CppType* if it can be extracted without an instance of T.
     template<class T>
     const Il2CppType* ExtractIndependentType() {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("ExtractIndependentType");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("ExtractIndependentType");
         auto* klass = RET_0_UNLESS(logger, NoArgClass<T>());
         il2cpp_functions::Init();
         return il2cpp_functions::class_get_type(klass);

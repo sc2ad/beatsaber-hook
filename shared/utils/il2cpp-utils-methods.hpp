@@ -64,7 +64,7 @@ namespace il2cpp_utils {
         if constexpr (::std::is_same_v<Dt, Il2CppType*> || ::std::is_same_v<Dt, Il2CppClass*>) {
             return nullptr;
         }
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("ToIl2CppObject");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("ToIl2CppObject");
         auto* klass = RET_0_UNLESS(logger, ExtractClass(arg));
         return il2cpp_functions::value_box(klass, &arg);
     }
@@ -156,7 +156,7 @@ namespace il2cpp_utils {
     /// @param params The arguments to pass into the function.
     template<class TOut = Il2CppObject*, bool checkTypes = true, class T, class... TArgs>
     TOut RunMethodThrow(T&& instance, const MethodInfo* method, TArgs&& ...params) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethodThrow");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethodThrow");
         if (!method) {
             throw RunMethodException("Method cannot be null!");
         }
@@ -228,7 +228,7 @@ namespace il2cpp_utils {
     // Runs a MethodInfo with the specified parameters and instance, with return type TOut.
     // Assumes a static method if instance == nullptr. May fail due to exception or wrong name, hence the ::std::optional.
     ::std::optional<TOut> RunMethod(T&& instance, const MethodInfo* method, TArgs&& ...params) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethod");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethod");
         RET_NULLOPT_UNLESS(logger, method);
 
         if constexpr (checkTypes && sizeof...(TArgs) > 0) {
@@ -273,7 +273,7 @@ namespace il2cpp_utils {
     // Checks the types of the parameters against the candidate methods.
     ::std::enable_if_t<!::std::is_convertible_v<T, ::std::string_view>, ::std::optional<TOut>>
     RunMethod(T&& classOrInstance, ::std::string_view methodName, TArgs&& ...params) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethod");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethod");
         if constexpr (checkTypes) {
             auto types = ExtractTypes(params...);
             if (types.size() != sizeof...(TArgs)) {
@@ -301,7 +301,7 @@ namespace il2cpp_utils {
     // Runs a static method with the specified method name and arguments, on the class with the specified namespace and class name.
     // The method also has return type TOut.
     ::std::optional<TOut> RunMethod(::std::string_view nameSpace, ::std::string_view klassName, ::std::string_view methodName, TArgs&& ...params) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethod");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethod");
         auto* klass = RET_NULLOPT_UNLESS(logger, GetClassFromName(nameSpace, klassName));
         return RunMethod<TOut, checkTypes>(klass, methodName, params...);
     }
@@ -317,14 +317,14 @@ namespace il2cpp_utils {
     /// @param params Parameters to RunMethod
     template<class TOut = Il2CppObject*, class T, class... TArgs>
     ::std::optional<TOut> RunGenericMethod(T&& instance, const MethodInfo* info, ::std::vector<Il2CppClass*> genTypes, TArgs&& ...params) noexcept {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunGenericMethod");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunGenericMethod");
         auto* createdMethod = RET_NULLOPT_UNLESS(logger, MakeGenericMethod(info, genTypes));
         return RunMethod<TOut, false>(instance, createdMethod, params...);
     }
     
     template<class TOut = Il2CppObject*, class T, class... TArgs>
     ::std::optional<TOut> RunGenericMethod(T&& classOrInstance, ::std::string_view methodName, ::std::vector<Il2CppClass*> genTypes, TArgs&& ...params) noexcept {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunGenericMethod");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunGenericMethod");
         auto types = ExtractTypes(params...);
         if (types.size() != sizeof...(TArgs)) {
             logger.warning("ExtractTypes for method %s failed!", methodName.data());
@@ -338,7 +338,7 @@ namespace il2cpp_utils {
     // Runs a static generic method with the specified method name and arguments, on the class with the specified namespace and class name.
     // The method also has return type TOut.
     ::std::optional<TOut> RunGenericMethod(::std::string_view nameSpace, ::std::string_view klassName, ::std::string_view methodName, ::std::vector<Il2CppClass*> genTypes, TArgs&& ...params) noexcept {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunGenericMethod");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunGenericMethod");
         auto* klass = RET_NULLOPT_UNLESS(logger, GetClassFromName(nameSpace, klassName));
         return RunGenericMethod<TOut>(klass, methodName, genTypes, params...);
     }
@@ -348,7 +348,7 @@ namespace il2cpp_utils {
     // DOES NOT PERFORM TYPE CHECKING.
     ::std::enable_if_t<::std::is_base_of_v<Il2CppClass, T> || ::std::is_base_of_v<Il2CppObject, T>, ::std::optional<TOut>>
     RunMethodUnsafe(T* classOrInstance, ::std::string_view methodName, TArgs&& ...params) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethodUnsafe");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethodUnsafe");
         RET_NULLOPT_UNLESS(logger, classOrInstance);
         auto* method = RET_NULLOPT_UNLESS(logger, FindMethodUnsafe(classOrInstance, methodName, sizeof...(TArgs)));
         return RunMethod<TOut, false>(classOrInstance, method, params...);
@@ -359,7 +359,7 @@ namespace il2cpp_utils {
     // The method also has return type TOut.
     // DOES NOT PERFORM TYPE CHECKING.
     ::std::optional<TOut> RunMethodUnsafe(::std::string_view nameSpace, ::std::string_view klassName, ::std::string_view methodName, TArgs&& ...params) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethodUnsafe");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethodUnsafe");
         auto* klass = RET_NULLOPT_UNLESS(logger, GetClassFromName(nameSpace, klassName));
         return RunMethodUnsafe<TOut>(klass, methodName, params...);
     }
@@ -368,7 +368,7 @@ namespace il2cpp_utils {
     // Creates a new object of the given class using the given constructor parameters
     // Will only run a .ctor whose parameter types match the given arguments.
     ::std::optional<TOut> New(Il2CppClass* klass, TArgs&& ...args) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("New");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("New");
         il2cpp_functions::Init();
 
         // object_new call
@@ -382,7 +382,7 @@ namespace il2cpp_utils {
     // Creates a new object of the given class using the given constructor parameters
     // DOES NOT PERFORM ARGUMENT TYPE CHECKING! Uses the first .ctor with the right number of parameters it sees.
     ::std::optional<TOut> NewUnsafe(const Il2CppClass* klass, TArgs&& ...args) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("NewUnsafe");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("NewUnsafe");
         il2cpp_functions::Init();
 
         // object_new call
@@ -397,7 +397,7 @@ namespace il2cpp_utils {
     // Will only run a .ctor whose parameter types match the given arguments.
     ::std::enable_if_t<(... && (!::std::is_convertible_v<Il2CppClass*, TArgs> && !::std::is_convertible_v<TArgs, ::std::string_view>)),
     ::std::optional<TOut>> New(TArgs&& ...args) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("New");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("New");
         auto* klass = RET_NULLOPT_UNLESS(logger, (NoArgClass<TOut, true>()));
         return New<TOut>(klass, args...);
     }
@@ -406,7 +406,7 @@ namespace il2cpp_utils {
     // Creates a new object of the class with the given nameSpace and className using the given constructor parameters.
     // Will only run a .ctor whose parameter types match the given arguments.
     ::std::optional<TOut> New(::std::string_view nameSpace, ::std::string_view className, TArgs&& ...args) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("New");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("New");
         auto* klass = RET_0_UNLESS(logger, GetClassFromName(nameSpace, className));
         return New<TOut>(klass, args...);
     }
@@ -415,7 +415,7 @@ namespace il2cpp_utils {
     // Creates a new object of the class with the given nameSpace and className using the given constructor parameters.
     // DOES NOT PERFORM ARGUMENT TYPE CHECKING! Uses the first .ctor with the right number of parameters it sees.
     ::std::optional<TOut> NewUnsafe(::std::string_view nameSpace, ::std::string_view className, TArgs* ...args) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("NewUnsafe");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("NewUnsafe");
         auto* klass = RET_0_UNLESS(logger, GetClassFromName(nameSpace, className));
         return NewUnsafe<TOut>(klass, args...);
     }

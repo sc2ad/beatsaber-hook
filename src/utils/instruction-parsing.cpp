@@ -37,7 +37,7 @@ std::optional<std::pair<uint64_t, uint64_t>> DecodeBitMasks(unsigned N, unsigned
 }
 
 decltype(Instruction::result) ExtractAddress(Instruction* instWithResultAdr, Instruction* instWithImmOffset) {
-    static auto& logger = Logger::get().WithContext("instruction-parsing").WithContext("ExtractAddress");
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("ExtractAddress");
     RET_0_UNLESS(logger, instWithImmOffset->imm);
     auto jmpOff = instWithResultAdr->result;
     auto offset = *(instWithImmOffset->imm);
@@ -48,7 +48,7 @@ decltype(Instruction::result) ExtractAddress(Instruction* instWithResultAdr, Ins
 }
 
 decltype(Instruction::result) ExtractAddress(const int32_t* addr, int pcRelN, int offsetN) {
-    static auto& logger = Logger::get().WithContext("instruction-parsing").WithContext("ExtractAddress");
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("ExtractAddress");
     Instruction funcInst(addr);
     auto instAdrp = funcInst.findNthPcRelAdr(pcRelN);
     RET_0_UNLESS(logger, instAdrp);
@@ -67,7 +67,7 @@ decltype(Instruction::result) ExtractAddressFixed(const int32_t* inst, int idxOf
 }
 
 Instruction* EvalSwitch(const uint32_t* switchTable, int switchCaseValue) {
-    static auto& logger = Logger::get().WithContext("instruction-parsing").WithContext("EvalSwitch");
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("EvalSwitch");
     auto stOffset = SignExtend<int64_t>(switchTable[switchCaseValue - 1], 32);
     auto jmpAddr = (int64_t)switchTable + stOffset;
     logger.debug("jmp offset from switch table: %lX (-%lX); jmp: %lX (offset %lX)",
@@ -76,7 +76,7 @@ Instruction* EvalSwitch(const uint32_t* switchTable, int switchCaseValue) {
 }
 
 Instruction* EvalSwitch(const int32_t* inst, int pcRelN, int offsetN, int switchCaseValue) {
-    static auto& logger = Logger::get().WithContext("instruction-parsing").WithContext("EvalSwitch");
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("EvalSwitch");
     auto switchTable = (const uint32_t*)ExtractAddress(inst, pcRelN, offsetN);
     RET_0_UNLESS(logger, switchTable);
     return EvalSwitch(switchTable, switchCaseValue);
@@ -190,7 +190,7 @@ Instruction* Instruction::findNthImmOffsetOnReg(int n, uint_fast8_t reg, int ret
 }
 
 Instruction::Instruction(const int32_t* inst) {
-    static auto& logger = Logger::get().WithContext("instruction-parsing").WithContext("Instruction");
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("Instruction");
     addr = inst;
     auto pc = (intptr_t)inst;
     auto base = getBase(pc);
@@ -1118,7 +1118,7 @@ void InstructionTree::Eval(ProgramState* state) {
 
 InstructionTree* FindOrCreateInstruction(const int32_t* pc, ParseState& parseState, const char* msg) {
     auto p = parseState.codeToInstTree.find(pc);
-    static auto& logger = Logger::get().WithContext("instruction-parsing").WithContext("FindOrCreateInstruction");
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("FindOrCreateInstruction");
     if (p != parseState.codeToInstTree.end()) {
         logger.debug("not recursing: InstructionTree for %p (offset %lX) already exists", pc, asOffset((intptr_t)pc));
         return p->second;
@@ -1136,7 +1136,7 @@ void ProcessRegisterDependencies(Instruction* inst, uint_fast8_t Rd, decltype(Pa
     for (uint_fast8_t i = 0; i < inst->numSourceRegisters; i++) {
         auto Rs = inst->Rs[i];
         if ((Rs < 0) || ((size_t)Rs >= depMap.max_size())) {
-            static auto& logger = Logger::get().WithContext("instruction-parsing").WithContext("ProcessRegisterDependencies");
+            static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("ProcessRegisterDependencies");
             logger.critical("Instruction is wrong! numSourceRegisters = %i but Rs[%i] = %i\n%s", inst->numSourceRegisters, i, Rs,
                 inst->toString().c_str());
             SAFE_ABORT();
@@ -1193,7 +1193,7 @@ std::string DepMapToString(decltype(ParseState::dependencyMap)& depMap) {
 
 void InstructionTree::PopulateChildren(ParseState& parseState) {
     auto pc = this->addr;
-    static auto& logger = Logger::get().WithContext("instruction-parsing").WithContext("PopulateChildren");
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("PopulateChildren");
     logger.debug("InstructionTree: %p, %s", pc, this->toString().c_str());
     // If instruction was not fully parsed, stop.
     if (!parsed || !valid) return;
@@ -1251,7 +1251,7 @@ std::string AssemblyFunction::toString() const {
 }
 
 AssemblyFunction::AssemblyFunction(const int32_t* pc): parseState() {
-    static auto& logger = Logger::get().WithContext("instruction-parsing").WithContext("AssemblyFunction");
+    static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("AssemblyFunction");
     logger.debug("Starting dependency map: %s", DepMapToString(parseState.dependencyMap).c_str());
     auto root = new InstructionTree(pc);
     parseState.frontier.push({root, std::move(parseState.dependencyMap)});

@@ -35,7 +35,7 @@ namespace il2cpp_utils {
     }
 
     bool ParameterMatch(const MethodInfo* method, std::vector<Il2CppClass*> genTypes, std::vector<const Il2CppType*> argTypes) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("ParameterMatch");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("ParameterMatch");
         il2cpp_functions::Init();
         if (method->parameters_count != argTypes.size()) {
             return false;
@@ -131,13 +131,13 @@ namespace il2cpp_utils {
     }
 
     Il2CppClass* GetParamClass(const MethodInfo* method, int paramIdx) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("GetParamClass");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("GetParamClass");
         auto type = RET_0_UNLESS(logger, il2cpp_functions::method_get_param(method, paramIdx));
         return il2cpp_functions::class_from_il2cpp_type(type);
     }
 
     Il2CppReflectionType* MakeGenericType(Il2CppReflectionType* gt, Il2CppArray* types) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeGenericType");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeGenericType");
         il2cpp_functions::Init();
 
         auto runtimeType = RET_0_UNLESS(logger, il2cpp_functions::defaults->runtimetype_class);
@@ -159,7 +159,7 @@ namespace il2cpp_utils {
     }
 
     Il2CppReflectionType* GetSystemType(const Il2CppClass* klass) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("GetSystemType");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("GetSystemType");
         il2cpp_functions::Init();
         RET_0_UNLESS(logger, klass);
 
@@ -172,7 +172,7 @@ namespace il2cpp_utils {
     }
 
     void GenericsToStringHelper(Il2CppGenericClass* genClass, std::ostream& os) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("GenericsToStringHelper");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("GenericsToStringHelper");
         auto genContext = &genClass->context;
         auto* genInst = genContext->class_inst;
         if (!genInst) {
@@ -217,7 +217,7 @@ namespace il2cpp_utils {
     }
 
     Il2CppString* createcsstr(std::string_view inp, StringType type) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("createcsstr");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("createcsstr");
         il2cpp_functions::Init();
         switch (type) {
             case Manual: {
@@ -243,7 +243,7 @@ namespace il2cpp_utils {
     }
 
     bool AssertMatch(const Il2CppObject* source, Il2CppClass* klass) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("AssertMatch");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("AssertMatch");
         il2cpp_functions::Init();
         if (!Match(source, klass)) {
             logger.critical("source with class '%s' does not match class '%s'!",

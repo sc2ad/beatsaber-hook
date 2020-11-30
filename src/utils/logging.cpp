@@ -200,47 +200,47 @@ void Logger::startConsumer() {
     }
 }
 
-LoggerContextObject& Logger::WithContext(std::string_view context) {
+LoggerContextObject Logger::WithContext(std::string_view context) {
     contextMutex.lock();
-    for (auto& item : disabledContexts) {
+    for (auto item : disabledContexts) {
         if (context.starts_with(item)) {
             // Disable context
-            auto& tmp = contexts.emplace_back(*this, context, false);
+            // auto& tmp = contexts.emplace_back(*this, context, false);
             contextMutex.unlock();
-            return tmp;
+            return LoggerContextObject(*this, context, false);
         }
     }
     // If I am silent, my context objects are disabled.
-    auto& tmp = contexts.emplace_back(*this, context, !options.silent);
+    // auto& tmp = contexts.emplace_back(*this, context, !options.silent);
     contextMutex.unlock();
-    return tmp;
+    return LoggerContextObject(*this, context, false);
 }
 
-LoggerContextObject& Logger::WithContext(LoggerContextObject* parent, std::string_view context) {
+LoggerContextObject Logger::WithContext(LoggerContextObject* parent, std::string_view context) {
     contextMutex.lock();
-    for (auto& item : disabledContexts) {
+    for (auto item : disabledContexts) {
         if (context.starts_with(item)) {
             // Disable context
             if (parent) {
-                auto& tmp = contexts.emplace_back(parent, parent->context + options.contextSeparator + context.data(), false);
+                // auto& tmp = contexts.emplace_back(parent, parent->context + options.contextSeparator + context.data(), false);
                 contextMutex.unlock();
-                return tmp;
+                return LoggerContextObject(parent, parent->context + options.contextSeparator + context.data(), false);
             } else {
-                auto& tmp = contexts.emplace_back(*this, context, false);
+                // auto& tmp = contexts.emplace_back(*this, context, false);
                 contextMutex.unlock();
-                return tmp;
+                return LoggerContextObject(*this, context, false);
             }
         }
     }
     // If I am silent, my context objects are disabled.
     if (parent) {
-        auto& tmp = contexts.emplace_back(parent, parent->context + options.contextSeparator + context.data(), !options.silent);
+        // auto& tmp = contexts.emplace_back(parent, parent->context + options.contextSeparator + context.data(), !options.silent);
         contextMutex.unlock();
-        return tmp;
+        return LoggerContextObject(parent, parent->context + options.contextSeparator + context.data(), false);
     } else {
-        auto& tmp = contexts.emplace_back(*this, context, !options.silent);
+        // auto& tmp = contexts.emplace_back(*this, context, !options.silent);
         contextMutex.unlock();
-        return tmp;
+        return LoggerContextObject(*this, context, false);
     }
 }
 

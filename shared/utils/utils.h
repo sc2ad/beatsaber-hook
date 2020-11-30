@@ -197,7 +197,7 @@ template<class T>
 intptr_t getBase(T pc) {
     static_assert(sizeof(T) >= sizeof(void*));
     Dl_info info;
-    static auto& logger = Logger::get().WithContext("getBase");
+    static auto logger = Logger::get().WithContext("getBase");
     RET_0_UNLESS(logger, dladdr((void*)pc, &info));
     return (intptr_t)info.dli_fbase;
 }

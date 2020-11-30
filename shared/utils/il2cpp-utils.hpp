@@ -65,7 +65,7 @@ namespace il2cpp_utils {
     T MakeDelegate(const Il2CppClass* delegateClass, TObj obj, function_ptr_t<R, TArgs...> callback) {
         static_assert(std::is_pointer_v<TObj>, "TObj must be a pointer!");
         static_assert(std::is_pointer_v<T>, "T must be a pointer!");
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeDelegate");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeDelegate");
         /*
         * TODO: call PlatformInvoke::MarshalFunctionPointerToDelegate directly instead of copying code from it,
         * or at least use a cache like utils::NativeDelegateMethodCache::GetNativeDelegate(nativeFunctionPointer);
@@ -148,7 +148,7 @@ namespace il2cpp_utils {
     template<typename T = MulticastDelegate*, typename T1, typename T2>
     T MakeDelegate(const MethodInfo* method, int paramIdx, T1&& arg1, T2&& arg2) {
         il2cpp_functions::Init();
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeDelegate");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeDelegate");
         auto* delegateType = RET_0_UNLESS(logger, il2cpp_functions::method_get_param(method, paramIdx));
         return MakeDelegate<T>(delegateType, arg1, arg2);
     }
@@ -164,7 +164,7 @@ namespace il2cpp_utils {
     template<typename T = MulticastDelegate*, typename T1, typename T2>
     T MakeDelegate(FieldInfo* field, T1&& arg1, T2&& arg2) {
         il2cpp_functions::Init();
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeDelegate");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeDelegate");
         auto* delegateType = RET_0_UNLESS(logger, il2cpp_functions::field_get_type(field));
         return MakeDelegate<T>(delegateType, arg1, arg2);
     }
@@ -172,14 +172,14 @@ namespace il2cpp_utils {
     // Intializes an object (using the given args) fit to be passed to the given method at the given parameter index.
     template<typename... TArgs>
     Il2CppObject* CreateParam(const MethodInfo* method, int paramIdx, TArgs&& ...args) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("CreateParam");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("CreateParam");
         auto* klass = RET_0_UNLESS(logger, GetParamClass(method, paramIdx));
         return il2cpp_utils::New(klass, args...);
     }
 
     template<typename... TArgs>
     Il2CppObject* CreateParamUnsafe(const MethodInfo* method, int paramIdx, TArgs&& ...args) {
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("CreateParamUnsafe");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("CreateParamUnsafe");
         auto* klass = RET_0_UNLESS(logger, GetParamClass(method, paramIdx));
         return il2cpp_utils::NewUnsafe(klass, args...);
     }
@@ -191,7 +191,7 @@ namespace il2cpp_utils {
     template<typename T>
     Array<T>* vectorToArray(::std::vector<T>& vec) {
         il2cpp_functions::Init();
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("vectorToArray");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("vectorToArray");
         Array<T>* arr = reinterpret_cast<Array<T>*>(RET_0_UNLESS(logger, il2cpp_functions::array_new(il2cpp_type_check::il2cpp_no_arg_class<T>::get(), vec.size())));
         for (size_t i = 0; i < vec.size(); i++) {
             arr->values[i] = vec[i];
@@ -261,7 +261,7 @@ namespace il2cpp_utils {
     T MakeFunc(function_ptr_t<Ret, TArgs...> lambda) {
         static_assert(sizeof...(TArgs) + 1 <= 16, "Cannot create a Func`<T1, T2, ..., TN> where N is > 16!");
         static_assert(!std::is_same_v<Ret, void>, "Function used in ::il2cpp_utils::MakeFunc must have a non-void return!");
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeFunc");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeFunc");
         // Get generic class with matching number of args
         static auto* genericClass = il2cpp_utils::GetClassFromName("System", "Func`" + ::std::to_string(sizeof...(TArgs) + 1));
         // Extract all parameter types and return types
@@ -279,7 +279,7 @@ namespace il2cpp_utils {
     template<typename T = MulticastDelegate*, typename... TArgs>
     T MakeAction(function_ptr_t<void, TArgs...> lambda) {
         static_assert(sizeof...(TArgs) <= 16, "Cannot create an Action`<T1, T2, ..., TN> where N is > 16!");
-        static auto& logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeAction");
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeAction");
         if constexpr (sizeof...(TArgs) != 0) {
             // Get generic class with matching number of args
             static auto* genericClass = il2cpp_utils::GetClassFromName("System", "Action`" + ::std::to_string(sizeof...(TArgs)));
