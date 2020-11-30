@@ -145,6 +145,10 @@ std::string type_name() {
 }
 #endif
 
+template<int s, int t> struct check_size {
+    static_assert(s == t, "size mismatch!");
+};
+
 // For use in fire-if-compiled asserts e.g. static_assert(false_t<T>, "message")
 template <class...> constexpr std::false_type false_t{};
 

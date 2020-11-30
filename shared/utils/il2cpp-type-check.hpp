@@ -314,7 +314,4 @@ namespace il2cpp_utils {
         };
     }
 }
-template<int s, int t> struct check_size {
-    static_assert(s == t, "size mismatch!");
-};
 #endif /* #ifndef IL2CPP_TYPE_CHECK_H */
