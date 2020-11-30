@@ -268,6 +268,24 @@ namespace il2cpp_utils {
         return FromIl2CppObject<TOut>(ret);
     }
 
+    template<class TOut = Il2CppObject*, bool checkTypes = true, class... TArgs>
+    // Simply forwards arguments to RunMethod<TOut, checkTypes>(static_cast<Il2CppClass*>(nullptr), ...)
+    ::std::optional<TOut> RunStaticMethod(const MethodInfo* method, TArgs&& ...params) {
+        return RunMethod<TOut, checkTypes>(static_cast<Il2CppClass*>(nullptr), method, params...);
+    }
+
+    template<class TOut = Il2CppObject*, class T, class... TArgs>
+    // Simply forwards arguments to RunMethod<TOut, false>
+    ::std::optional<TOut> RunMethodUnsafe(T&& instance, const MethodInfo* method, TArgs&& ...params) {
+        return RunMethod<TOut, false>(instance, method, params...);
+    }
+
+    template<class TOut = Il2CppObject*, class... TArgs>
+    // Simply forwards arguments to RunMethod<TOut, false>(static_cast<Il2CppClass*>(nullptr), ...)
+    ::std::optional<TOut> RunStaticMethodUnsafe(const MethodInfo* method, TArgs&& ...params) {
+        return RunMethod<TOut, false>(static_cast<Il2CppClass*>(nullptr), method, params...);
+    }
+
     template<class TOut = Il2CppObject*, bool checkTypes = true, class T, class... TArgs>
     // Runs a (static) method with the specified method name, with return type TOut.
     // Checks the types of the parameters against the candidate methods.
