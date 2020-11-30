@@ -61,16 +61,16 @@ auto&& unwrap_optionals(T&& arg) {
 // Logs error and RETURNS argument 1 IFF argument 2 boolean evaluates as false; else EVALUATES to argument 2
 // thank god for this GCC ({}) extension which "evaluates to the last statement"
 #ifndef SUPPRESS_MACRO_LOGS
-#define RET_UNLESS(retval, loggerContext, expr) ({ \
-    auto&& __temp__ = (expr); \
+#define RET_UNLESS(retval, loggerContext, ...) ({ \
+    auto&& __temp__ = (__VA_ARGS__); \
     if (!__temp__) { \
-        loggerContext.error("%s (in %s at %s:%i) returned false!", #expr, __PRETTY_FUNCTION__, __FILE__, __LINE__); \
+        loggerContext.error("%s (in %s at %s:%i) returned false!", #__VA_ARGS__, __PRETTY_FUNCTION__, __FILE__, __LINE__); \
         return retval; \
     } \
     unwrap_optionals(__temp__); })
 #else
-#define RET_UNLESS(retval, loggerContext, expr) ({ \
-    auto&& __temp__ = (expr); \
+#define RET_UNLESS(retval, loggerContext, ...) ({ \
+    auto&& __temp__ = (__VA_ARGS__); \
     if (!__temp__) { \
         return retval; \
     } \
@@ -79,33 +79,33 @@ auto&& unwrap_optionals(T&& arg) {
 
 #if __has_feature(cxx_exceptions)
 #ifndef SUPPRESS_MACRO_LOGS
-#define THROW_OR_RET_NULL(contextLogger, expr) ({ \
-    auto&& __temp__ = (expr); \
+#define THROW_OR_RET_NULL(contextLogger, ...) ({ \
+    auto&& __temp__ = (__VA_ARGS__); \
     if (!__temp__) { \
-        contextLogger.error("%s (in %s at %s:%i) returned false!", #expr, __PRETTY_FUNCTION__, __FILE__, __LINE__); \
-        throw ::il2cpp_utils::Il2CppUtilsException(contextLogger.context, #expr " is false!", __PRETTY_FUNCTION__, __FILE__, __LINE__); \
+        contextLogger.error("%s (in %s at %s:%i) returned false!", #__VA_ARGS__, __PRETTY_FUNCTION__, __FILE__, __LINE__); \
+        throw ::il2cpp_utils::Il2CppUtilsException(contextLogger.context, #__VA_ARGS__ " is false!", __PRETTY_FUNCTION__, __FILE__, __LINE__); \
     } \
     unwrap_optionals(__temp__); })
 #else
-#define THROW_OR_RET_NULL(contextLogger, expr) ({ \
-    auto&& __temp__ = (expr); \
+#define THROW_OR_RET_NULL(contextLogger, ...) ({ \
+    auto&& __temp__ = (__VA_ARGS__); \
     if (!__temp__) { \
-        throw ::il2cpp_utils::Il2CppUtilsException(contextLogger.context, #expr " is false!"); \
+        throw ::il2cpp_utils::Il2CppUtilsException(contextLogger.context, #__VA_ARGS__ " is false!"); \
     } \
     unwrap_optionals(__temp__); })
 #endif
 #else
 #ifndef SUPPRESS_MACRO_LOGS
-#define THROW_OR_RET_NULL(contextLogger, expr) ({ \
-    auto&& __temp__ = (expr); \
+#define THROW_OR_RET_NULL(contextLogger, ...) ({ \
+    auto&& __temp__ = (__VA_ARGS__); \
     if (!__temp__) { \
-        contextLogger.error("%s (in %s at %s:%i) returned false!", #expr, __PRETTY_FUNCTION__, __FILE__, __LINE__); \
+        contextLogger.error("%s (in %s at %s:%i) returned false!", #__VA_ARGS__, __PRETTY_FUNCTION__, __FILE__, __LINE__); \
         return nullptr; \
     } \
     unwrap_optionals(__temp__); })
 #else
-#define THROW_OR_RET_NULL(contextLogger, expr) ({ \
-    auto&& __temp__ = (expr); \
+#define THROW_OR_RET_NULL(contextLogger, ...) ({ \
+    auto&& __temp__ = (__VA_ARGS__); \
     if (!__temp__) { \
         return nullptr; \
     } \
@@ -113,10 +113,10 @@ auto&& unwrap_optionals(T&& arg) {
 #endif
 #endif
 
-#define RET_V_UNLESS(loggerContext, expr) RET_UNLESS(, loggerContext, expr)
-#define RET_DEFAULT_UNLESS(loggerContext, expr) RET_UNLESS({}, loggerContext, expr)
-#define RET_0_UNLESS(loggerContext, expr) RET_DEFAULT_UNLESS(loggerContext, expr)
-#define RET_NULLOPT_UNLESS(loggerContext, expr) RET_DEFAULT_UNLESS(loggerContext, expr)
+#define RET_V_UNLESS(loggerContext, ...) RET_UNLESS(, loggerContext, __VA_ARGS__)
+#define RET_DEFAULT_UNLESS(loggerContext, ...) RET_UNLESS({}, loggerContext, __VA_ARGS__)
+#define RET_0_UNLESS(loggerContext, ...) RET_DEFAULT_UNLESS(loggerContext, __VA_ARGS__)
+#define RET_NULLOPT_UNLESS(loggerContext, ...) RET_DEFAULT_UNLESS(loggerContext, __VA_ARGS__)
 
 // Produces a has_[member]<T, U> type trait whose ::value tells you whether T has a member named [member] with type U.
 #define DEFINE_MEMBER_CHECKER(member) \
