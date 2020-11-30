@@ -151,22 +151,22 @@ void Logger::closeAll() {
     __android_log_write(Logging::CRITICAL, Logger::get().tag.c_str(), "All buffers closed!");
 }
 
-bool Logger::init() const {
+bool Logger::init() {
     // So, we want to take a look at our options.
     // If we have fileLog set to true, we want to clear the file pointed to by this log.
     // That means that we want to delete the existing file (because storing a bunch is pretty obnoxious)
     if (options.toFile) {
-        if (fileexists(buffer.path)) {
-            deletefile(buffer.path);
+        if (fileexists(buffer.get_path())) {
+            deletefile(buffer.get_path());
         }
         // Now, create the file and paths as necessary.
         if (!direxists(buffer.get_logDir())) {
             mkpath(buffer.get_logDir());
             __android_log_print(Logging::INFO, tag.c_str(), "Created logger buffer dir: %s", buffer.get_logDir().c_str());
         }
-        std::ofstream str(buffer.path);
+        std::ofstream str(buffer.get_path());
         if (!str.is_open()) {
-            __android_log_print(Logging::CRITICAL, tag.c_str(), "Could not open logger buffer file: %s!", buffer.path.c_str());
+            __android_log_print(Logging::CRITICAL, tag.c_str(), "Could not open logger buffer file: %s!", buffer.get_path().c_str());
             return false;
         } else {
             str.close();
@@ -205,15 +205,13 @@ LoggerContextObject Logger::WithContext(std::string_view context) {
     for (auto item : disabledContexts) {
         if (context.starts_with(item)) {
             // Disable context
-            // auto& tmp = contexts.emplace_back(*this, context, false);
             contextMutex.unlock();
             return LoggerContextObject(*this, context, false);
         }
     }
     // If I am silent, my context objects are disabled.
-    // auto& tmp = contexts.emplace_back(*this, context, !options.silent);
     contextMutex.unlock();
-    return LoggerContextObject(*this, context, false);
+    return LoggerContextObject(*this, context, !options.silent);
 }
 
 LoggerContextObject Logger::WithContext(LoggerContextObject* parent, std::string_view context) {
@@ -222,11 +220,9 @@ LoggerContextObject Logger::WithContext(LoggerContextObject* parent, std::string
         if (context.starts_with(item)) {
             // Disable context
             if (parent) {
-                // auto& tmp = contexts.emplace_back(parent, parent->context + options.contextSeparator + context.data(), false);
                 contextMutex.unlock();
                 return LoggerContextObject(parent, parent->context + options.contextSeparator + context.data(), false);
             } else {
-                // auto& tmp = contexts.emplace_back(*this, context, false);
                 contextMutex.unlock();
                 return LoggerContextObject(*this, context, false);
             }
@@ -234,13 +230,11 @@ LoggerContextObject Logger::WithContext(LoggerContextObject* parent, std::string
     }
     // If I am silent, my context objects are disabled.
     if (parent) {
-        // auto& tmp = contexts.emplace_back(parent, parent->context + options.contextSeparator + context.data(), !options.silent);
         contextMutex.unlock();
-        return LoggerContextObject(parent, parent->context + options.contextSeparator + context.data(), false);
+        return LoggerContextObject(parent, parent->context + options.contextSeparator + context.data(), !options.silent);
     } else {
-        // auto& tmp = contexts.emplace_back(*this, context, !options.silent);
         contextMutex.unlock();
-        return LoggerContextObject(*this, context, false);
+        return LoggerContextObject(*this, context, !options.silent);
     }
 }
 
@@ -265,10 +259,10 @@ void Logger::DisableContext(std::string_view context) {
     disabledContexts.emplace(context.data());
     // We should also iterate over all disabledContexts and determine if any existing contexts need to be disabled.
     // Existing contexts could have parent contexts, though.
-    for (auto& ctx : contexts) {
+    for (auto* ctx : contexts) {
         // For each context, only check those without parents (top level, recurse down)
-        if (ctx.parentContext == nullptr) {
-            RecurseChangeContext(&ctx, context, false);
+        if (ctx->parentContext == nullptr) {
+            RecurseChangeContext(ctx, context, false);
         }
     }
     contextMutex.unlock();
@@ -280,10 +274,10 @@ void Logger::EnableContext(std::string_view context) {
     if (itr != disabledContexts.end()) {
         disabledContexts.erase(itr);
     }
-    for (auto& ctx : contexts) {
+    for (auto* ctx : contexts) {
         // For each context, only check those without parents (top level, recurse down)
-        if (ctx.parentContext == nullptr) {
-            RecurseChangeContext(&ctx, context, true);
+        if (ctx->parentContext == nullptr) {
+            RecurseChangeContext(ctx, context, true);
         }
     }
     contextMutex.unlock();

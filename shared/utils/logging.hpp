@@ -90,8 +90,7 @@ class Logger {
     friend LoggerBuffer;
     friend LoggerContextObject;
     public:
-        Logger(const ModInfo info, LoggerOptions options_) : options(options_), modInfo(info), buffer(modInfo) {
-            tag = "QuestHook[" + info.id + "|v" + info.version + "]";
+        Logger(const ModInfo info, LoggerOptions options_) : options(options_), tag("QuestHook[" + info.id + "|v" + info.version + "]"), modInfo(info), buffer(modInfo) {
             if (!init()) {
                 buffer.closed = true;
             }
@@ -102,12 +101,7 @@ class Logger {
             auto match = &buffer;
             bufferMutex.lock();
             // Remove ourselves
-            for (auto itr = buffers.begin(); itr != buffers.end(); ++itr) {
-                if (*itr == match) {
-                    buffers.erase(itr);
-                    break;
-                }
-            }
+            buffers.remove(match);
             bufferMutex.unlock();
         }
         void log(Logging::Level lvl, std::string str);
@@ -132,7 +126,7 @@ class Logger {
         /// This happens on default when this instance is constructed.
         /// This should also be called anytime the options field is modified.
         /// @returns True if the initialization was successful, false otherwise. If false is returned, you should set buffer.closed to true.
-        bool init() const;
+        bool init();
         /// @brief Call this to silence logs from this logger. Should improve performance slightly.
         /// Note that this call causes ALL calls to this particular logger to be silent, including from other mods.
         /// Should only be used in particular cases.
@@ -169,8 +163,7 @@ class Logger {
 
         std::unordered_set<std::string> disabledContexts;
         /// @brief All created contexts for this instance
-        /// TODO: Currently unused.
-        std::list<LoggerContextObject> contexts;
+        std::vector<LoggerContextObject*> contexts;
         /// @brief The mutex for the contexts maps/sets
         std::mutex contextMutex;
 
@@ -216,17 +209,31 @@ class LoggerContextObject {
     std::list<LoggerContextObject*> childrenContexts;
 
     public:
+    /// @brief Constructs a LoggerContextObject. Should only be called from Logger.WithContext or LoggerContextObject.WithContext
+    /// @param l Logger instance to use
+    /// @param context_ The context for this object
+    /// @param enabled_ If it is enabled or not
     LoggerContextObject(Logger& l, std::string_view context_, bool enabled_) : enabled(enabled_), logger(l), context(context_.data()) {
         tag.append("(").append(context_.data()).append(") ");
+        logger.contextMutex.lock();
+        logger.contexts.push_back(this);
+        logger.contextMutex.unlock();
     }
 
+    /// @brief Constructs a nested LoggerContextObject. Should only be called from Logger.WithContext or LoggerContextObject.WithContext
+    /// @param parent LoggerContextObject parent
+    /// @param context_ The context for this object
+    /// @param enabled_ If it is enabled or not
     LoggerContextObject(LoggerContextObject* const parent, std::string_view context_, bool enabled_)
         : enabled(enabled_ && parent->enabled), parentContext(parent), logger(parent->logger), context(context_)
     {
         tag.append("(").append(context.data()).append(") ");
         parentContext->childrenContexts.push_back(this);
+        logger.contextMutex.lock();
+        logger.contexts.push_back(this);
+        logger.contextMutex.unlock();
     }
-
+    /// @brief Equality operator.
     bool operator==(const LoggerContextObject& other) const {
         return tag == other.tag && enabled == other.enabled && parentContext == other.parentContext;
     }
@@ -242,11 +249,25 @@ class LoggerContextObject {
     const std::list<LoggerContextObject*> getChildren() {
         return childrenContexts;
     }
-    // Cannot copy a context object
+    // Cannot copy a context object, see the move constructor instead
     LoggerContextObject(const LoggerContextObject&) = delete;
-    // Can move a context object
-    LoggerContextObject(LoggerContextObject&& other) = default;
-    // Can delete a context object
+    /// @brief Move constructor. Modifies the Logger's contexts collection.
+    LoggerContextObject(LoggerContextObject&& other)
+        : tag(std::move(other.tag)), enabled(std::move(other.enabled)), parentContext(other.parentContext), childrenContexts(std::move(other.childrenContexts)), logger(other.logger), context(std::move(other.context))
+    {
+        // Potential race condition if move is called, interrupted, and DisableContext is called (should not result in much issue, though)
+        logger.contextMutex.try_lock();
+        // We we move the context, we need to update the pointer in the contexts collection
+        for (auto itr = logger.contexts.begin(); itr != logger.contexts.end(); ++itr) {
+            if (*itr == &other) {
+                logger.contexts.erase(itr);
+                break;
+            }
+        }
+        logger.contexts.push_back(this);
+        logger.contextMutex.unlock();
+    }
+    /// @brief Destructor. Modified the Logger's contexts collection.
     ~LoggerContextObject() {
         // We delete all of our children
         childrenContexts.clear();
@@ -255,10 +276,14 @@ class LoggerContextObject {
             parentContext->childrenContexts.remove(this);
         }
         // Remove ourselves from logger.contexts
-        // logger.contextMutex.lock();
-        // logger.contexts.remove(*this);
-        // logger.contextMutex.unlock();
-        __android_log_print(Logging::DEBUG, "QuestHook[Logging]", "Destroyed LoggerContextObject: %s!", context.c_str());
+        logger.contextMutex.lock();
+        for (auto itr = logger.contexts.begin(); itr != logger.contexts.end(); ++itr) {
+            if (*itr == this) {
+                logger.contexts.erase(itr);
+                break;
+            }
+        }
+        logger.contextMutex.unlock();
     }
 
     void log(Logging::Level lvl, std::string str) const {
@@ -266,10 +291,10 @@ class LoggerContextObject {
             logger.log(lvl, tag + str);
         }
     }
-    template<typename... TArgs>
-    void log(Logging::Level lvl, std::string_view fmt, TArgs... args) const {
+    template<typename T, typename... TArgs>
+    void log(Logging::Level lvl, std::string_view fmt, T first, TArgs... args) const {
         if (enabled) {
-            logger.log(lvl, tag + fmt.data(), args...);
+            logger.log(lvl, tag + fmt.data(), first, args...);
         }
     }
     template<typename... TArgs>
