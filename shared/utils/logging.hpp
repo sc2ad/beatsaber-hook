@@ -225,6 +225,10 @@ class LoggerContextObject {
         tag.append("(").append(context.data()).append(") ");
         parentContext->childrenContexts.push_back(this);
     }
+
+    bool operator==(const LoggerContextObject& other) const {
+        return tag == other.tag && enabled == other.enabled && parentContext == other.parentContext;
+    }
     /// @brief The Logger reference.
     Logger& logger;
     /// @brief The context of this LoggerContextObject
