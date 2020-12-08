@@ -36,8 +36,8 @@ template <typename Container> struct is_vector : std::false_type { };
 template <typename... Ts> struct is_vector<std::vector<Ts...> > : std::true_type { };
 // TODO: figure out how to write an is_vector_v that compiles properly?
 
-#define MACRO_WRAP(expr) do { \
-    expr; \
+#define MACRO_WRAP(...) do { \
+    __VA_ARGS__; \
 } while(0)
 
 template <class, template <class, class...> class>
@@ -224,9 +224,9 @@ auto throwUnless(T&& arg, const char* func, const char* file, int line) {
     return unwrap_optionals(arg);
 }
 #ifndef SUPPRESS_MACRO_LOGS
-#define THROW_UNLESS(expr) throwUnless(expr, __PRETTY_FUNCTION__, __FILE__, __LINE__)
+#define THROW_UNLESS(...) throwUnless(__VA_ARGS__, __PRETTY_FUNCTION__, __FILE__, __LINE__)
 #else
-#define THROW_UNLESS(expr) throwUnless(expr, "undefined_function", "undefined_file", -1)
+#define THROW_UNLESS(...) throwUnless(__VA_ARGS__, "undefined_function", "undefined_file", -1)
 #endif /* SUPPRESS_MACRO_LOGS */
 #endif /* __has_feature(cxx_exceptions) */
 
