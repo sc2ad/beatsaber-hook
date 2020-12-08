@@ -1,6 +1,4 @@
 .\build.ps1
 
-adb shell am force-stop com.beatgames.beatsaber
-
-adb push libs/arm64-v8a/libbeatsaber-hook.so /sdcard/Android/data/com.beatgames.beatsaber/files/libs/libbeatsaber-hook_0_3_9.so
-cp obj/local/arm64-v8a/libbeatsaber-hook.so ..\libbeatsaber-hook_0_3_9.so
+& adb push ./obj/local/arm64-v8a/libbeatsaber-hook_1_0_0.so /sdcard/Android/data/com.beatgames.beatsaber/files/libs/libbeatsaber-hook_1_0_0.so
+Copy-Item -Force obj/local/arm64-v8a/libbeatsaber-hook_1_0_0.so ../libbeatsaber-hook_1_0_0.so

@@ -38,16 +38,22 @@ struct HookTracker {
     static void RemoveHooks();
     /// @brief Stop tracking all hooks at a certain offset.
     /// @param location The offset to check for any installed hooks.
-    static void RemoveHooks(void* location);
+    static void RemoveHooks(void* const location);
     /// @brief Checks to see if there are any hooks installed at the offset provided.
     /// Returns true if at least one hook is installed, false otherwise.
     /// @param location The offset to check for.
     /// @returns Whether there exists at least one hook acting on this location.
-    static bool IsHooked(void* location);
+    static bool IsHooked(void* const location);
     /// @brief Returns any hooks that access this location, or an empty list if there are none.
     /// @param location The offset to check for.
     /// @returns An std::list<HookInfo> of hooks.
-    static const std::list<HookInfo> GetHooks(void* location);
+    static const std::list<HookInfo> GetHooks(void* const location);
+    /// @brief Returns the original location of a function that may or may not be hooked.
+    /// If the function is not hooked, it returns the input.
+    /// If the function is hooked, it returns the first installed hook's original location.
+    /// @param location The offset to get the original function for.
+    /// @returns The returned address.
+    static void* GetOrig(void* const location);
     private:
     static std::unordered_map<void*, std::list<HookInfo>> hooks;
 };

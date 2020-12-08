@@ -26,14 +26,14 @@ void HookTracker::RemoveHooks() {
     hooks.clear();
 }
 
-void HookTracker::RemoveHooks(void* location) {
+void HookTracker::RemoveHooks(void* const location) {
     auto itr = hooks.find(location);
     if (itr != hooks.end()) {
         hooks.erase(itr);
     }
 }
 
-bool HookTracker::IsHooked(void* location) {
+bool HookTracker::IsHooked(void* const location) {
     auto itr = hooks.find(location);
     if (itr != hooks.end()) {
         return itr->second.size() > 0;
@@ -41,10 +41,18 @@ bool HookTracker::IsHooked(void* location) {
     return false;
 }
 
-const std::list<HookInfo> HookTracker::GetHooks(void* location) {
+const std::list<HookInfo> HookTracker::GetHooks(void* const location) {
     auto itr = hooks.find(location);
     if (itr != hooks.end()) {
         return itr->second;
     }
     return std::list<HookInfo>();
+}
+
+void* HookTracker::GetOrig(void* const location) {
+    auto itr = hooks.find(location);
+    if (itr != hooks.end() && itr->second.size() > 0) {
+        return itr->second.front().orig;
+    }
+    return location;
 }
