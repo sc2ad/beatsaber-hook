@@ -28,11 +28,10 @@ namespace il2cpp_utils {
         }
     };
     struct RunMethodException : std::runtime_error {
-        Il2CppException* ex;
-        RunMethodException(std::string_view msg) : std::runtime_error(msg.data()) {}
-        RunMethodException(Il2CppException* exp) : std::runtime_error(ExceptionToString(exp).c_str()) {
-            ex = exp;
-        }
+        const Il2CppException* ex;
+        const MethodInfo* info;
+        RunMethodException(std::string_view msg, const MethodInfo* inf) : std::runtime_error(msg.data()), ex(nullptr), info(inf) {}
+        RunMethodException(Il2CppException* exp, const MethodInfo* inf) : std::runtime_error(ExceptionToString(exp).c_str()), ex(exp), info(inf) {}
     };
     #endif
 }

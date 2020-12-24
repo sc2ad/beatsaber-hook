@@ -105,12 +105,48 @@ class Logger {
             bufferMutex.unlock();
         }
         void log(Logging::Level lvl, std::string str);
-        void log(Logging::Level lvl, std::string_view fmt, ...);
-        void critical(std::string_view fmt, ...);
-        void error(std::string_view fmt, ...);
-        void warning(std::string_view fmt, ...);
-        void info(std::string_view fmt, ...);
-        void debug(std::string_view fmt, ...);
+        template<typename... TArgs>
+        void log(Logging::Level lvl, std::string_view fmt, TArgs... args) {
+            if (options.silent) {
+                return;
+            }
+            log(lvl, string_format(fmt, args...));
+        }
+        template<typename... TArgs>
+        void critical(std::string_view fmt, TArgs... args) {
+            if (options.silent) {
+                return;
+            }
+            log(Logging::CRITICAL, string_format(fmt, args...));
+        }
+        template<typename... TArgs>
+        void error(std::string_view fmt, TArgs... args) {
+            if (options.silent) {
+                return;
+            }
+            log(Logging::ERROR, string_format(fmt, args...));
+        }
+        template<typename... TArgs>
+        void warning(std::string_view fmt, TArgs... args) {
+            if (options.silent) {
+                return;
+            }
+            log(Logging::WARNING, string_format(fmt, args...));
+        }
+        template<typename... TArgs>
+        void info(std::string_view fmt, TArgs... args) {
+            if (options.silent) {
+                return;
+            }
+            log(Logging::INFO, string_format(fmt, args...));
+        }
+        template<typename... TArgs>
+        void debug(std::string_view fmt, TArgs... args) {
+            if (options.silent) {
+                return;
+            }
+            log(Logging::DEBUG, string_format(fmt, args...));
+        }
         /// @brief Flushes the buffer for this logger instance.
         void flush();
         /// @brief Closes the buffer for this logger instance, flushing as necessary.

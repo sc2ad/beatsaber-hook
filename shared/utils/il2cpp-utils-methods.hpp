@@ -10,9 +10,12 @@
 #include "utils.h"
 
 namespace il2cpp_utils {
-    std::vector<const Il2CppType*> TypesFrom(std::vector<const Il2CppType*> types);
-    std::vector<const Il2CppType*> TypesFrom(std::vector<const Il2CppClass*> classes);
-    std::vector<const Il2CppType*> TypesFrom(std::vector<std::string_view> strings);
+    ::std::vector<Il2CppClass*> ClassesFrom(::std::vector<Il2CppClass*> classes);
+    ::std::vector<Il2CppClass*> ClassesFrom(::std::vector<::std::string_view> strings);
+
+    ::std::vector<const Il2CppType*> TypesFrom(std::vector<const Il2CppType*> types);
+    ::std::vector<const Il2CppType*> TypesFrom(std::vector<const Il2CppClass*> classes);
+    ::std::vector<const Il2CppType*> TypesFrom(std::vector<std::string_view> strings);
 
     struct FindMethodInfo {
         Il2CppClass* klass = nullptr;
@@ -158,13 +161,13 @@ namespace il2cpp_utils {
     TOut RunMethodThrow(T&& instance, const MethodInfo* method, TArgs&& ...params) {
         static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("RunMethodThrow");
         if (!method) {
-            throw RunMethodException("Method cannot be null!");
+            throw RunMethodException("Method cannot be null!", nullptr);
         }
 
         if constexpr (checkTypes && sizeof...(TArgs) > 0) {
             auto typeVec = ExtractTypes(params...);
             if (!ParameterMatch(method, typeVec)) {
-                throw RunMethodException("Parameters do not match!");
+                throw RunMethodException("Parameters do not match!", method);
             }
         }
 
@@ -176,7 +179,7 @@ namespace il2cpp_utils {
         if (exp) {
             logger.error("%s: Failed with exception: %s", il2cpp_functions::method_get_name(method),
                 il2cpp_utils::ExceptionToString(exp).c_str());
-            throw RunMethodException(exp);
+            throw RunMethodException(exp, method);
         }
         if constexpr (checkTypes) {
             if (ret) {
@@ -192,7 +195,13 @@ namespace il2cpp_utils {
                 }
             }
         }
-        return FromIl2CppObject<TOut>(ret);
+        if constexpr (!std::is_same_v<TOut, void>) {
+            auto res = FromIl2CppObject<TOut>(ret);
+            if (!res) {
+                throw RunMethodException("Return type could not be extracted from ret!", method);
+            }
+            return *res;
+        }
     }
     #else
     /// @brief Instantiates a generic MethodInfo* from the provided Il2CppClasses.
