@@ -207,11 +207,25 @@ namespace il2cpp_utils {
         Manual,     // string is owned by C++, must be manually freed (use this for string constants as well)
     };
 
+    /// @brief How to create an il2cpp object.
+    enum CreationType {
+        /// @brief Created object is a C# object, it may be GC'd.
+        Temporary,
+        /// @brief Created object is manual, it must be freed explicitly (via delete).
+        Manual
+    };
+
+    /// @brief Manually creates an instance of the provided Il2CppClass*.
+    /// The created instance's type initializer will NOT execute on another thread! Be warned!
+    /// @param klass The Il2CppClass* to create an instance of.
+    /// @return The created instance, or nullptr if it failed for any reason.
+    Il2CppObject* createManual(Il2CppClass* const klass) noexcept;
+
     /// @brief Creates a new C# string and registers it with GC. Copies the input string.
     /// @param inp String view to create the string from.
     /// @param type The type of string to create
     /// @return Created string
-    Il2CppString* createcsstr(::std::string_view inp, StringType type = Temporary);
+    Il2CppString* createcsstr(::std::string_view inp, StringType type = StringType::Temporary);
 
     // Returns if a given source object is an object of the given class
     // Created by zoller27osu

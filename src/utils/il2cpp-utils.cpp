@@ -216,6 +216,25 @@ namespace il2cpp_utils {
         return ss.str();
     }
 
+    Il2CppObject* createManual(Il2CppClass* const klass) {
+        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("createManual");
+        if (!klass->initialized) {
+            logger.error("Cannot create an object that does not have an initialized class: %p", klass);
+            return nullptr;
+        }
+        // Allocate object
+        auto* obj = reinterpret_cast<Il2CppObject*>(calloc(1, klass->instance_size));
+        obj->klass = klass;
+        // Call cctor, we don't bother making a new thread for the type initializer. BE WARNED!
+        if (klass->has_cctor && !klass->cctor_finished && !klass->cctor_started) {
+            klass->cctor_started = true;
+            auto* m = RET_0_UNLESS(logger, FindMethodUnsafe(klass, ".cctor", 0));
+            RET_0_UNLESS(logger, il2cpp_utils::RunStaticMethodUnsafe(m));
+            klass->cctor_finished = true;
+        }
+        return obj;
+    }
+
     Il2CppString* createcsstr(std::string_view inp, StringType type) {
         static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("createcsstr");
         il2cpp_functions::Init();
