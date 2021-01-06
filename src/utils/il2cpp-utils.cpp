@@ -216,7 +216,7 @@ namespace il2cpp_utils {
         return ss.str();
     }
 
-    Il2CppObject* createManual(Il2CppClass* const klass) {
+    Il2CppObject* createManual(const Il2CppClass* klass) noexcept {
         static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("createManual");
         if (!klass->initialized) {
             logger.error("Cannot create an object that does not have an initialized class: %p", klass);
@@ -224,13 +224,13 @@ namespace il2cpp_utils {
         }
         // Allocate object
         auto* obj = reinterpret_cast<Il2CppObject*>(calloc(1, klass->instance_size));
-        obj->klass = klass;
+        obj->klass = const_cast<Il2CppClass*>(klass);
         // Call cctor, we don't bother making a new thread for the type initializer. BE WARNED!
         if (klass->has_cctor && !klass->cctor_finished && !klass->cctor_started) {
-            klass->cctor_started = true;
+            obj->klass->cctor_started = true;
             auto* m = RET_0_UNLESS(logger, FindMethodUnsafe(klass, ".cctor", 0));
             RET_0_UNLESS(logger, il2cpp_utils::RunStaticMethodUnsafe(m));
-            klass->cctor_finished = true;
+            obj->klass->cctor_finished = true;
         }
         return obj;
     }
@@ -239,7 +239,7 @@ namespace il2cpp_utils {
         static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("createcsstr");
         il2cpp_functions::Init();
         switch (type) {
-            case Manual: {
+            case StringType::Manual: {
                 il2cpp_functions::CheckS_GlobalMetadata();
                 auto mallocSize = sizeof(Il2CppString) + sizeof(Il2CppChar) * inp.length();
                 auto* str = RET_0_UNLESS(logger, reinterpret_cast<Il2CppString*>(calloc(1, mallocSize)));

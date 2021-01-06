@@ -10,6 +10,21 @@
 #include "utils.h"
 
 namespace il2cpp_utils {
+
+    /// @brief How to create an il2cpp object.
+    enum struct CreationType {
+        /// @brief Created object is a C# object, it may be GC'd.
+        Temporary,
+        /// @brief Created object is manual, it must be freed explicitly (via delete).
+        Manual
+    };
+
+    /// @brief Manually creates an instance of the provided Il2CppClass*.
+    /// The created instance's type initializer will NOT execute on another thread! Be warned!
+    /// @param klass The Il2CppClass* to create an instance of.
+    /// @return The created instance, or nullptr if it failed for any reason.
+    Il2CppObject* createManual(const Il2CppClass* klass) noexcept;
+
     ::std::vector<Il2CppClass*> ClassesFrom(::std::vector<Il2CppClass*> classes);
     ::std::vector<Il2CppClass*> ClassesFrom(::std::vector<::std::string_view> strings);
 
