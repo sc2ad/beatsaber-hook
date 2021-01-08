@@ -911,7 +911,7 @@ void il2cpp_functions::Init() {
 
     // XREF TRACES
     // Class::Init. 0x846A68 in 1.5, 0x9EC0A4 in 1.7.0, 0xA6D1B8 in 1.8.0b1
-    Instruction ans((const int32_t*)array_new_specific);
+    Instruction ans((const int32_t*)HookTracker::GetOrig(array_new_specific));
     Instruction Array_NewSpecific(CRASH_UNLESS(ans.label));
     logger.debug("Array::NewSpecific offset: %lX", ((intptr_t)Array_NewSpecific.addr) - getRealOffset(0));
     auto j2Cl_I = CRASH_UNLESS(Array_NewSpecific.findNthCall(1));  // also the 113th call in Runtime::Init
@@ -920,7 +920,7 @@ void il2cpp_functions::Init() {
     usleep(1000);  // 0.001s
 
     // MetadataCache::GetTypeInfoFromTypeIndex. offset 0x84F764 in 1.5, 0x9F5250 in 1.7.0, 0xA7A79C in 1.8.0b1
-    Instruction caha((const int32_t*)custom_attrs_has_attr);
+    Instruction caha((const int32_t*)HookTracker::GetOrig(custom_attrs_has_attr));
     Instruction MetadataCache_HasAttribute(CRASH_UNLESS(caha.label));
     auto j2MC_GTIFTI = CRASH_UNLESS(MetadataCache_HasAttribute.findNthCall(1));
     MetadataCache_GetTypeInfoFromTypeIndex = (decltype(MetadataCache_GetTypeInfoFromTypeIndex))CRASH_UNLESS(j2MC_GTIFTI->label);
@@ -929,7 +929,7 @@ void il2cpp_functions::Init() {
     usleep(1000);  // 0.001s
 
     // MetadataCache::GetTypeInfoFromTypeDefinitionIndex. offset 0x84FBA4 in 1.5, 0x9F5690 in 1.7.0, 0xA75958 in 1.8.0b1
-    Instruction tgcoec((const int32_t*)type_get_class_or_element_class);
+    Instruction tgcoec((const int32_t*)HookTracker::GetOrig(type_get_class_or_element_class));
     Instruction Type_GetClassOrElementClass(CRASH_UNLESS(tgcoec.label));
     auto j2MC_GTIFTDI = CRASH_UNLESS(Type_GetClassOrElementClass.findNthDirectBranchWithoutLink(5));
     MetadataCache_GetTypeInfoFromTypeDefinitionIndex =
@@ -939,14 +939,14 @@ void il2cpp_functions::Init() {
     usleep(1000);  // 0.001s
 
     // Type::GetName. offset 0x8735DC in 1.5, 0xA1A458 in 1.7.0, 0xA7B634 in 1.8.0b1
-    Instruction tanq((const int32_t*)type_get_assembly_qualified_name);
+    Instruction tanq((const int32_t*)HookTracker::GetOrig(type_get_assembly_qualified_name));
     auto j2T_GN = CRASH_UNLESS(tanq.findNthCall(1));
     _Type_GetName_ = (decltype(_Type_GetName_))CRASH_UNLESS(j2T_GN->label);
     logger.debug("Type::GetName found? offset: %lX", ((intptr_t)_Type_GetName_) - getRealOffset(0));
     usleep(1000);  // 0.001s
 
     // GenericClass::GetClass. offset 0x88DF64 in 1.5, 0xA34F20 in 1.7.0, 0xA6E4EC in 1.8.0b1
-    Instruction cfit((const int32_t*)class_from_il2cpp_type);
+    Instruction cfit((const int32_t*)HookTracker::GetOrig(class_from_il2cpp_type));
     Class_FromIl2CppType = (decltype(Class_FromIl2CppType))CRASH_UNLESS(cfit.label);
     auto caseStart = CRASH_UNLESS(EvalSwitch(Class_FromIl2CppType, 1, 1, IL2CPP_TYPE_GENERICINST));
     auto j2GC_GC = CRASH_UNLESS(caseStart->findNthDirectBranchWithoutLink(1));
@@ -964,7 +964,7 @@ void il2cpp_functions::Init() {
     usleep(1000);  // 0.001s
 
     // Assembly::GetAllAssemblies
-    Instruction dga((const int32_t*)domain_get_assemblies);
+    Instruction dga((const int32_t*)HookTracker::GetOrig(domain_get_assemblies));
     auto j2A_GAA = CRASH_UNLESS(dga.findNthCall(1));    
     Assembly_GetAllAssemblies = (decltype(Assembly_GetAllAssemblies))CRASH_UNLESS(j2A_GAA->label);
     logger.debug("Assembly::GetAllAssemblies found? offset: %lX", ((intptr_t)Assembly_GetAllAssemblies) - getRealOffset(0));
@@ -973,7 +973,7 @@ void il2cpp_functions::Init() {
 
     CRASH_UNLESS(shutdown);
     // GC_free
-    Instruction sd((const int32_t*)shutdown);
+    Instruction sd((const int32_t*)HookTracker::GetOrig(shutdown));
     auto* Runtime_Shutdown = CRASH_UNLESS(sd.label);
 
     if (find_GC_free(Runtime_Shutdown)) {
@@ -982,7 +982,7 @@ void il2cpp_functions::Init() {
     }
 
     // il2cpp_defaults
-    Instruction iu16((const int32_t*)init_utf16);
+    Instruction iu16((const int32_t*)HookTracker::GetOrig(init_utf16));
     auto j2R_I = CRASH_UNLESS(iu16.findNthCall(3));
     Instruction Runtime_Init(CRASH_UNLESS(j2R_I->label));
     // alternatively, could just get the 1st ADRP in Runtime::Init with dest reg x20 (or the 9th ADRP)

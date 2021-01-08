@@ -92,6 +92,8 @@ public:
 
     bool parsed;  // whether the instruction was fully and successfully parsed
     bool valid = true;  // iff parsed, whether the instruction is a valid one
+    // For LDR (literal), dictates the size of the result in bytes.
+    uint8_t size;
 
     // ~~~ METHODS ~~~
     std::string toString() const;
@@ -106,6 +108,8 @@ public:
     bool isLoadOrStore();
     bool isLoad();
     bool isStore();
+    bool isHint();
+    bool isNOP();
 
     // Does the instruction have an Immediate that might be an offset that applies to register "reg"?
     bool hasImmOffsetOnReg(uint_fast8_t reg);

@@ -9,6 +9,8 @@ static const char* unalloc = "UNALLOCATED";
 static const char* pcRelAddr = "PC-rel. addressing";
 static const char* ldSt = "Loads and Stores";
 static const char* addSubImm = "Add/subtract (immediate)";
+static const char* nopSt = "NOP";
+static const char* hintSt = "HINT";
 
 // https://developer.arm.com/docs/ddi0596/a/a64-shared-pseudocode-functions/aarch64-instrs-pseudocode#impl-aarch64.DecodeBitMasks
 // Explanation at https://dinfuehr.github.io/blog/encoding-of-immediate-values-on-aarch64/
@@ -159,6 +161,14 @@ bool Instruction::isLoad() {
 }
 bool Instruction::isStore() {
     return isLoadOrStore() && (strncmp(this->kind[2], "ST", 2) == 0);
+}
+
+bool Instruction::isHint() {
+    return kind[0] == hintSt;
+}
+
+bool Instruction::isNOP() {
+    return kind[parseLevel - 1] == nopSt;
 }
 
 bool Instruction::hasImmOffsetOnReg(uint_fast8_t reg) {
@@ -791,6 +801,22 @@ Instruction::Instruction(const int32_t* inst) {
                 } else {
                     logger.debug("opc: %i, op3: %i, op4: %i", opc, op3, op4);
                 }
+            } else if (op1 == 0b01000000110010) {
+                if (op2 == 0b11111) {
+                    // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/branches-exception-generating-and-system-instructions
+                    // https://developer.arm.com/docs/ddi0596/a/a64-base-instructions-alphabetic-order/hint-hint-instruction
+                    kind[parseLevel++] = hintSt;
+                    uint_fast8_t CRm = bits(code, 11, 8);
+                    op2 = bits(code, 7, 5);
+                    if (CRm == 0 && op2 == 0) {
+                        // NOP
+                        kind[parseLevel++] = nopSt;
+                    } else {
+                        logger.debug("HINT instruction, CRm = %i, op2 = %i", CRm, op2);
+                    }
+                } else {
+                    kind[parseLevel++] = unalloc;
+                }
             } else {
                 logger.debug("op0 = 0b110, op1: %lu", op1);
             }
@@ -1091,6 +1117,51 @@ Instruction::Instruction(const int32_t* inst) {
                     }
                 } else {
                     logger.debug("TODO: SIMD&FP LDP/STP. opc: %i, V: %i, L: %i", opc, V, L);
+                }
+            }
+        } else if (op0 == 0b1001 && op1 == 0 && (op2 & 0b10) != 0 && (op3 & 0b100000) != 0) {
+            // This is an unalloc, specific for op0 = 5
+            kind[parseLevel++] = unalloc;
+        } else if ((op0 & 0b11) == 0b01) { // xx01
+            if ((op2 & 0b10) < 0b10) { // 0x
+                // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/loads-and-stores#loadlit
+                kind[parseLevel++] = "Load register (literal)";
+                uint_fast8_t opc = bits(code, 31, 30);
+                uint_fast8_t V = bits(code, 26, 26);
+                uint_fast32_t imm19 = bits(code, 23, 5);
+                uint_fast8_t rt = bits(code, 4, 0);
+                logger.debug("opc: %i, V: %i, imm19: %lu, rt: %i", opc, V, imm19, rt);
+
+                // inst: ptr = 0x7F6D60C400 (offset 0x1A15400), bytes = 01011000000000000000000001010001 (58000051), top-level op0: 12
+                // op0: 5, op2: 0, op3: 0, op4: 0
+                if (V == 1) {
+                    if (opc == 0b11) {
+                        kind[parseLevel++] = unalloc;
+                    } else {
+                        logger.debug("TODO: SIMD Load register literal");
+                    }
+                } else {
+                    if (opc == 0b00) {
+                        // https://developer.arm.com/docs/ddi0596/a/a64-base-instructions-alphabetic-order/ldr-literal-load-register-literal
+                        kind[parseLevel++] = "LDR (literal) - 32-bit";
+                        Rd = rt;
+                        RdCanBeSP = true;
+                        label = reinterpret_cast<const int32_t*>(reinterpret_cast<int64_t>(addr) + SignExtend<int64_t>(imm19 << 2, 32));
+                        // Actual data is located at PC + label, is 32 bits.
+                        size = 4;
+                    } else if (opc == 0b01) {
+                        // https://developer.arm.com/docs/ddi0596/a/a64-base-instructions-alphabetic-order/ldr-literal-load-register-literal
+                        kind[parseLevel++] = "LDR (literal) - 64-bit";
+                        Rd = rt;
+                        RdCanBeSP = true;
+                        label = reinterpret_cast<const int32_t*>(reinterpret_cast<int64_t>(addr) + SignExtend<int64_t>(imm19 << 2, 32));
+                        size = 8;
+                        // Actual data is located at PC + label, is 64 bits.
+                    } else if (opc == 0b10) {
+                        kind[parseLevel++] = "LDRSW (literal)";
+                    } else if (opc == 0b11) {
+                        kind[parseLevel++] = "PRFM (literal)";
+                    }
                 }
             }
         } else {
