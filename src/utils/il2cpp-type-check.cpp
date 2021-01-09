@@ -4,12 +4,17 @@
 #include <unordered_map>
 
 namespace il2cpp_utils {
+    LoggerContextObject& getLogger() {
+        static auto logger = Logger::get().WithContext("il2cpp_utils");
+        return logger;
+    }
+
     // It doesn't matter what types these are, they just need to be used correctly within the methods
     static std::unordered_map<std::pair<std::string, std::string>, Il2CppClass*, hash_pair> namesToClassesCache;
 
     Il2CppClass* GetClassFromName(std::string_view name_space, std::string_view type_name) {
         il2cpp_functions::Init();
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("GetClassFromName");
+        static auto logger = getLogger().WithContext("GetClassFromName");
 
         // TODO: avoid creating std::string at any point except new pair insertion via P0919
         // Check cache
@@ -42,7 +47,7 @@ namespace il2cpp_utils {
 
     Il2CppClass* MakeGeneric(const Il2CppClass* klass, std::vector<const Il2CppClass*> args) {
         il2cpp_functions::Init();
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeGeneric");
+        static auto logger = getLogger().WithContext("MakeGeneric");
 
         auto typ = RET_0_UNLESS(logger, il2cpp_functions::defaults->systemtype_class);
         auto klassType = RET_0_UNLESS(logger, GetSystemType(klass));
@@ -73,7 +78,7 @@ namespace il2cpp_utils {
 
     Il2CppClass* MakeGeneric(const Il2CppClass* klass, const Il2CppType** types, uint32_t numTypes) {
         il2cpp_functions::Init();
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("GetClassFromName");
+        static auto logger = getLogger().WithContext("GetClassFromName");
 
         auto typ = RET_0_UNLESS(logger, il2cpp_functions::defaults->systemtype_class);
         auto klassType = RET_0_UNLESS(logger, GetSystemType(klass));

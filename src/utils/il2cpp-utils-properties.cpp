@@ -7,7 +7,7 @@ namespace il2cpp_utils {
     static std::unordered_map<std::pair<const Il2CppClass*, std::string>, const PropertyInfo*, hash_pair> classesNamesToPropertiesCache;
 
     const PropertyInfo* FindProperty(Il2CppClass* klass, std::string_view propName) {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("FindProperty");
+        static auto logger = getLogger().WithContext("FindProperty");
         il2cpp_functions::Init();
         RET_0_UNLESS(logger, klass);
 

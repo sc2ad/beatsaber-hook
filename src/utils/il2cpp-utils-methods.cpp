@@ -37,7 +37,7 @@ namespace il2cpp_utils {
     const MethodInfo* MakeGenericMethod(const MethodInfo* info, std::vector<Il2CppClass*> types) noexcept
     #endif
     {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("MakeGenericMethod");
+        static auto logger = getLogger().WithContext("MakeGenericMethod");
         il2cpp_functions::Init();
         // Ensure it exists and is generic
         THROW_OR_RET_NULL(logger, info);
@@ -90,7 +90,7 @@ namespace il2cpp_utils {
     #endif
     {
         il2cpp_functions::Init();
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("FindMethodUnsafe");
+        static auto logger = getLogger().WithContext("FindMethodUnsafe");
         THROW_OR_RET_NULL(logger, klass);
 
         // Check Cache
@@ -126,7 +126,7 @@ namespace il2cpp_utils {
     const MethodInfo* FindMethodUnsafe(Il2CppObject* instance, std::string_view methodName, int argsCount) noexcept
     #endif
     {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("FindMethodUnsafe");
+        static auto logger = getLogger().WithContext("FindMethodUnsafe");
         il2cpp_functions::Init();
         auto klass = THROW_OR_RET_NULL(logger, il2cpp_functions::object_get_class(instance));
         return FindMethodUnsafe(klass, methodName, argsCount);
@@ -138,7 +138,7 @@ namespace il2cpp_utils {
     const MethodInfo* FindMethod(FindMethodInfo& info) noexcept
     #endif
     {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("FindMethod");
+        static auto logger = getLogger().WithContext("FindMethod");
         il2cpp_functions::Init();
         auto* klass = info.klass;
         THROW_OR_RET_NULL(logger, klass);
@@ -276,7 +276,7 @@ namespace il2cpp_utils {
     }
 
     bool IsConvertible(const Il2CppType* to, const Il2CppType* from, bool asArgs) {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("IsConvertible");
+        static auto logger = getLogger().WithContext("IsConvertible");
         RET_0_UNLESS(logger, to);
         RET_0_UNLESS(logger, from);
         if (asArgs) {

@@ -99,10 +99,9 @@ class Logger {
         Logger(const ModInfo info) : Logger(info, LoggerOptions{false, false}) {}
         ~Logger() {
             auto match = &buffer;
-            bufferMutex.lock();
+            std::scoped_lock<std::mutex> lock(bufferMutex);
             // Remove ourselves
             buffers.remove(match);
-            bufferMutex.unlock();
         }
         void log(Logging::Level lvl, std::string str);
         template<typename... TArgs>
@@ -220,10 +219,9 @@ class Logger {
 
         static void emplace_safe(LoggerBuffer& buffer) {
             // Obtain lock
-            bufferMutex.lock();
+            std::scoped_lock<std::mutex> lock(bufferMutex);
             // Emplace, lock is released
             Logger::buffers.push_back(&buffer);
-            bufferMutex.unlock();
         }
         static void startConsumer();
 };
@@ -251,9 +249,8 @@ class LoggerContextObject {
     /// @param enabled_ If it is enabled or not
     LoggerContextObject(Logger& l, std::string_view context_, bool enabled_) : enabled(enabled_), logger(l), context(context_.data()) {
         tag.append("(").append(context_.data()).append(") ");
-        logger.contextMutex.lock();
+        std::scoped_lock<std::mutex> lock(logger.contextMutex);
         logger.contexts.push_back(this);
-        logger.contextMutex.unlock();
     }
 
     /// @brief Constructs a nested LoggerContextObject. Should only be called from Logger.WithContext or LoggerContextObject.WithContext
@@ -265,9 +262,8 @@ class LoggerContextObject {
     {
         tag.append("(").append(context.data()).append(") ");
         parentContext->childrenContexts.push_back(this);
-        logger.contextMutex.lock();
+        std::scoped_lock<std::mutex> lock(logger.contextMutex);
         logger.contexts.push_back(this);
-        logger.contextMutex.unlock();
     }
     /// @brief Equality operator.
     bool operator==(const LoggerContextObject& other) const {

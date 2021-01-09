@@ -7,7 +7,7 @@ namespace il2cpp_utils {
     static std::unordered_map<std::pair<const Il2CppClass*, std::string>, FieldInfo*, hash_pair> classesNamesToFieldsCache;
 
     FieldInfo* FindField(Il2CppClass* klass, std::string_view fieldName) {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("FindField");
+        static auto logger = getLogger().WithContext("FindField");
         il2cpp_functions::Init();
         RET_0_UNLESS(logger, klass);
 
@@ -28,7 +28,7 @@ namespace il2cpp_utils {
     }
 
     Il2CppClass* GetFieldClass(FieldInfo* field) {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("GetFieldClass");
+        static auto logger = getLogger().WithContext("GetFieldClass");
         auto type = RET_0_UNLESS(logger, il2cpp_functions::field_get_type(field));
         return il2cpp_functions::class_from_il2cpp_type(type);
     }

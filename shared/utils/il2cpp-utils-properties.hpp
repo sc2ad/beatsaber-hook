@@ -22,7 +22,7 @@ namespace il2cpp_utils {
     // Wrapper for FindProperty taking an instance to extract the Il2CppClass* from
     template<class T>
     const PropertyInfo* FindProperty(T&& instance, ::std::string_view propertyName) {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("FindProperty");
+        static auto logger = getLogger().WithContext("FindProperty");
         auto* klass = RET_0_UNLESS(logger, ExtractClass(instance));
         return FindProperty(klass, propertyName);
     }
@@ -31,7 +31,7 @@ namespace il2cpp_utils {
     // Gets a value from the given object instance, and PropertyInfo, with return type TOut.
     // Assumes a static property if instance == nullptr
     ::std::optional<TOut> GetPropertyValue(T&& classOrInstance, const PropertyInfo* prop) {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("GetPropertyValue");
+        static auto logger = getLogger().WithContext("GetPropertyValue");
         il2cpp_functions::Init();
         RET_NULLOPT_UNLESS(logger, prop);
 
@@ -42,7 +42,7 @@ namespace il2cpp_utils {
     template<typename TOut = Il2CppObject*, bool checkTypes = true, typename T>
     // Gets the value of the property with the given name from the given class or instance, and returns it as TOut.
     ::std::optional<TOut> GetPropertyValue(T&& classOrInstance, ::std::string_view propName) {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("GetPropertyValue");
+        static auto logger = getLogger().WithContext("GetPropertyValue");
         auto* prop = RET_NULLOPT_UNLESS(logger, FindProperty(classOrInstance, propName));
         return GetPropertyValue<TOut, checkTypes>(classOrInstance, prop);
     }
@@ -50,7 +50,7 @@ namespace il2cpp_utils {
     template<typename TOut = Il2CppObject*, bool checkTypes = true>
     // Gets the value of the static property with the given name from the class with the given nameSpace and className.
     ::std::optional<TOut> GetPropertyValue(::std::string_view nameSpace, ::std::string_view className, ::std::string_view propName) {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("GetPropertyValue");
+        static auto logger = getLogger().WithContext("GetPropertyValue");
         auto* klass = RET_0_UNLESS(logger, GetClassFromName(nameSpace, className));
         return GetPropertyValue<TOut, checkTypes>(klass, propName);
     }
@@ -60,7 +60,7 @@ namespace il2cpp_utils {
     // Only static properties work with classOrInstance == nullptr
     template<bool checkTypes = true, class T, class TArg>
     bool SetPropertyValue(T& classOrInstance, const PropertyInfo* prop, TArg&& value) {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("GetPropertyValue");
+        static auto logger = getLogger().WithContext("GetPropertyValue");
         il2cpp_functions::Init();
         RET_0_UNLESS(logger, prop);
 
@@ -72,7 +72,7 @@ namespace il2cpp_utils {
     // Returns false if it fails
     template<bool checkTypes = true, class T, class TArg>
     bool SetPropertyValue(T& classOrInstance, ::std::string_view propName, TArg&& value) {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("SetPropertyValue");
+        static auto logger = getLogger().WithContext("SetPropertyValue");
         auto* prop = RET_0_UNLESS(logger, FindProperty(classOrInstance, propName));
         return SetPropertyValue<checkTypes>(classOrInstance, prop, value);
     }
@@ -81,7 +81,7 @@ namespace il2cpp_utils {
     // Returns false if it fails
     template<bool checkTypes = true, class TArg>
     bool SetPropertyValue(::std::string_view nameSpace, ::std::string_view className, ::std::string_view propName, TArg&& value) {
-        static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("SetPropertyValue");
+        static auto logger = getLogger().WithContext("SetPropertyValue");
         auto* klass = RET_0_UNLESS(logger, GetClassFromName(nameSpace, className));
         return SetPropertyValue<checkTypes>(klass, propName, value);
     }

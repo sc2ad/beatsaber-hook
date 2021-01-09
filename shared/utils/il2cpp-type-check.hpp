@@ -36,6 +36,9 @@ constexpr bool has_get = std::experimental::is_detected_v<get_t, T>;
 #endif
 
 namespace il2cpp_utils {
+    // Returns the il2cpp_utils logger context singleton.
+    LoggerContextObject& getLogger();
+
     // Returns the first matching class from the given namespace and typeName by searching through all assemblies that are loaded.
     Il2CppClass* GetClassFromName(std::string_view name_space, std::string_view type_name);
 
@@ -60,7 +63,7 @@ namespace il2cpp_utils {
         struct il2cpp_no_arg_class<T*, typename std::enable_if_t<has_get<il2cpp_no_arg_class<T>>>> {
             static inline Il2CppClass* get() {
                 il2cpp_functions::Init();
-                static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("il2cpp_type_check").WithContext("il2cpp_no_arg_class");
+                static auto logger = getLogger().WithContext("il2cpp_no_arg_class");
                 auto* klass = RET_0_UNLESS(logger, il2cpp_no_arg_class<T>::get());
                 RET_0_UNLESS(logger, il2cpp_functions::class_is_valuetype(klass));
                 return il2cpp_functions::Class_GetPtrClass(klass);
@@ -171,7 +174,7 @@ namespace il2cpp_utils {
                     il2cpp_functions::CheckS_GlobalMetadata();
                     return il2cpp_functions::array_class_get(il2cpp_functions::defaults->object_class, 1);
                 } else {
-                    static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("il2cpp_type_check").WithContext("il2cpp_no_arg_class<Array<TArg>*>");
+                    static auto logger = getLogger().WithContext("il2cpp_no_arg_class<Array<TArg>*>");
                     Il2CppClass* eClass = RET_0_UNLESS(logger, il2cpp_no_arg_class<TArg>::get());
                     return il2cpp_functions::array_class_get(eClass, 1);
                 }
@@ -188,7 +191,7 @@ namespace il2cpp_utils {
         template<>
         struct il2cpp_arg_class<Il2CppType*> {
             static inline Il2CppClass* get(Il2CppType* arg) {
-                static auto logger = Logger::get().WithContext("il2cpp_utils").WithContext("il2cpp_type_check").WithContext("il2cpp_arg_class");
+                static auto logger = getLogger().WithContext("il2cpp_arg_class");
                 RET_0_UNLESS(logger, arg);
                 il2cpp_functions::Init();
                 return il2cpp_functions::class_from_il2cpp_type(arg);
