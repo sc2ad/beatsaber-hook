@@ -46,6 +46,37 @@ struct is_instance : public std::false_type {};
 template <class...Ts, template <class, class...> class U>
 struct is_instance<U<Ts...>, U> : public std::true_type {};
 
+// from https://gcc.gnu.org/bugzilla//show_bug.cgi?id=71579#c4, leading underscores removed
+namespace std {
+    template <class _Tp>
+    struct is_complete_impl
+    {
+        template <class _Up, size_t = sizeof(_Up)>
+        static true_type _S_test(int);
+
+        template <class _Up>
+        static false_type _S_test(...);
+
+        using type = decltype(_S_test<_Tp>(0));
+    };
+
+    template<typename _Tp>
+    using is_complete = typename is_complete_impl<_Tp>::type;
+
+    // my own (trivial) addition
+    template<typename _Tp>
+    constexpr bool is_complete_v = is_complete<_Tp>::value;
+}
+
+struct Il2CppObject;
+
+template<class T, class Enable = void>
+struct is_value_type : std::integral_constant< 
+    bool,
+    (std::is_arithmetic_v<T> || std::is_enum_v<T> || std::is_pointer_v<T> || std::is_standard_layout_v<T>) && !std::is_base_of_v<Il2CppObject, T>
+> {};
+template<class _T> constexpr bool is_value_type_v = is_value_type<_T>::value;
+
 template<class T>
 auto&& unwrap_optionals(T&& arg) {
     if constexpr (is_instance<std::decay_t<T>, std::optional>::value) {

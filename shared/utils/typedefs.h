@@ -6,28 +6,6 @@
 #include <type_traits>
 #include <initializer_list>
 
-// from https://gcc.gnu.org/bugzilla//show_bug.cgi?id=71579#c4, leading underscores removed
-namespace std {
-    template <class _Tp>
-    struct is_complete_impl
-    {
-        template <class _Up, size_t = sizeof(_Up)>
-        static true_type _S_test(int);
-
-        template <class _Up>
-        static false_type _S_test(...);
-
-        using type = decltype(_S_test<_Tp>(0));
-    };
-
-    template<typename _Tp>
-    using is_complete = typename is_complete_impl<_Tp>::type;
-
-    // my own (trivial) addition
-    template<typename _Tp>
-    constexpr bool is_complete_v = is_complete<_Tp>::value;
-}
-
 #include <cassert>
 // For including il2cpp properly
 #ifdef _MSC_VER
@@ -44,12 +22,6 @@ namespace std {
 #include "il2cpp-tabledefs.h"
 
 #ifdef __cplusplus
-template<class T, class Enable = void>
-struct is_value_type : std::integral_constant< 
-    bool,
-    (std::is_arithmetic_v<T> || std::is_enum_v<T> || std::is_pointer_v<T> || std::is_standard_layout_v<T>) && !std::is_base_of_v<Il2CppObject, T>
-> {};
-template<class _T> constexpr bool is_value_type_v = is_value_type<_T>::value;
 
 template<class T>
 struct Array;
@@ -134,96 +106,11 @@ typedef struct IntPtr {
 #include "il2cpp-object-internals.h"
 #endif
 
-#ifdef HAS_CODEGEN
-struct Il2CppReflectionType;
-struct Il2CppReflectionRuntimeType;
-#include "System/Object.hpp"
-typedef Il2CppClass Il2CppVTable;
-struct MonitorData;
-struct Il2CppObject : public System::Object {
-    union {
-        Il2CppClass *klass;
-        Il2CppVTable *vtable;
-    };
-    MonitorData *monitor;
-};
-#endif
+#include "typedefs-object.hpp"
+#include "typedefs-delegate.hpp"
+#include "typedefs-array.hpp"
 
-#ifdef HAS_CODEGEN
-#include "System/Delegate.hpp"
-// self-typedef'd in il2cpp-class-internals.h
-struct Il2CppDelegate : public System::Delegate {};
-typedef System::Delegate Delegate;
-#else
-struct DelegateData;
-// See il2cpp-object-internals.h/Il2CppDelegate
-// System.Delegate
-typedef struct Delegate : Il2CppObject {
-    Il2CppMethodPointer method_ptr; // 0x8
-    InvokerMethod invoke_impl; // 0xC
-    Il2CppObject* m_target; // 0x10
-    IntPtr* method; // 0x14
-    void* delegate_trampoline; // 0x18
-    intptr_t extra_arg; // 0x1C
-
-    /*
-    * If non-NULL, this points to a memory location which stores the address of
-    * the compiled code of the method, or NULL if it is not yet compiled.
-    */
-    uint8_t** method_code; // 0x20
-    Il2CppReflectionMethod* method_info; // 0x24
-    Il2CppReflectionMethod* original_method_info; // 0x28
-    DelegateData* data; // 0x2C
-    bool method_is_virtual; // 0x30
-} Delegate;
-#endif
-
-#ifdef HAS_CODEGEN
-#include "System/MulticastDelegate.hpp"
-typedef System::MulticastDelegate Il2CppMulticastDelegate;
-typedef System::MulticastDelegate MulticastDelegate;
-#else
-// System.MulticastDelegate
-typedef struct MulticastDelegate : Delegate {
-    ::Array<Delegate*>* delegates;
-} MulticastDelegate;
-#endif
-
-#ifdef HAS_CODEGEN
-typedef int32_t il2cpp_array_lower_bound_t;
-#define IL2CPP_ARRAY_MAX_INDEX ((int32_t) 0x7fffffff)
-#define IL2CPP_ARRAY_MAX_SIZE  ((uint32_t) 0xffffffff)
-
-typedef struct Il2CppArrayBounds
-{
-    il2cpp_array_size_t length;
-    il2cpp_array_lower_bound_t lower_bound;
-} Il2CppArrayBounds;
-
-#if IL2CPP_COMPILER_MSVC
-#pragma warning( push )
-#pragma warning( disable : 4200 )
-#elif defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winvalid-offsetof"
-#endif
-
-#include "System/Array.hpp"
-struct Il2CppArray : public System::Array {
-    /* bounds is NULL for szarrays */
-    Il2CppArrayBounds *bounds;
-    /* total number of elements of the array */
-    il2cpp_array_size_t max_length;
-};
-
-struct Il2CppArraySize : public Il2CppArray {
-    ALIGN_TYPE(8) void* vector[IL2CPP_ZERO_LEN_ARRAY];
-};
-
-static const size_t kIl2CppSizeOfArray = offsetof(Il2CppArraySize, vector);
-static const size_t kIl2CppOffsetOfArrayBounds = offsetof(Il2CppArray, bounds);
-static const size_t kIl2CppOffsetOfArrayLength = offsetof(Il2CppArray, max_length);
-#endif
+#include <stdint.h>
 
 namespace il2cpp_utils {
     namespace array_utils {
@@ -263,93 +150,6 @@ namespace il2cpp_utils {
 #include "System/String.hpp"
 struct Il2CppString : public System::String {};
 #endif
-
-#ifndef HAS_CODEGEN
-// System.DelegateData
-typedef struct DelegateData : Il2CppObject {
-    Il2CppReflectionType* target_type;
-    Il2CppString* method_name;
-    bool curied_first_arg;
-} DelegateData;
-#endif
-
-#ifdef HAS_CODEGEN
-#include "System/Collections/Generic/IReadOnlyList_1.hpp"
-#include "System/Collections/Generic/IList_1.hpp"
-template<class T>
-struct Array : public Il2CppArray, public System::Collections::Generic::IReadOnlyList_1<T>,
-  public System::Collections::Generic::IList_1<T>
-#else
-template<class T>
-struct Array : public Il2CppArray
-#endif
-{
-    static_assert(is_value_type_v<T>, "T must be a C# value type! (primitive, pointer or Struct)");
-    ALIGN_TYPE(8) T values[IL2CPP_ZERO_LEN_ARRAY];
-
-    il2cpp_array_size_t Length() {
-        if (bounds) {
-            return bounds->length;
-        }
-        return max_length;
-    }
-    T& operator[](size_t i) {
-        return values[i];
-    }
-    const T& operator[](size_t i) const {
-        return values[i];
-    }
-
-    static Array<T>* New(std::initializer_list<T> vals) {
-        il2cpp_functions::Init();
-        auto* arr = reinterpret_cast<Array<T>*>(il2cpp_functions::array_new(
-            il2cpp_utils::il2cpp_type_check::il2cpp_no_arg_class<T>::get(), vals.size()));
-        memcpy(arr->values, vals.begin(), sizeof(T)*vals.size());
-        return arr;
-    }
-
-    static Array<T>* NewLength(il2cpp_array_size_t size) {
-        il2cpp_functions::Init();
-        return reinterpret_cast<Array<T>*>(il2cpp_functions::array_new(
-            il2cpp_utils::il2cpp_type_check::il2cpp_no_arg_class<T>::get(), size));
-    }
-
-    template<typename... TArgs>
-    static Array<T>* New(TArgs&&... args) {
-        return New({args...});
-    }
-
-  #ifdef HAS_CODEGEN
-    System::Collections::Generic::IEnumerator_1<T>* GetEnumerator() {
-  #else
-    Il2CppObject* GetEnumerator() {
-  #endif
-        static auto* method = CRASH_UNLESS(il2cpp_utils::FindMethodUnsafe(
-            this, "System.Collections.Generic.IEnumerable`1.GetEnumerator", 0));
-      #ifdef HAS_CODEGEN
-        return CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe<System::Collections::Generic::IEnumerator_1<T>*>(
-      #else
-        return CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe(
-      #endif
-            this, method));
-    }
-
-    bool Contains(T item) {
-        // TODO: find a better way around the existence of 2 methods with this name (the 2nd not being generic at all)
-        static auto* method = CRASH_UNLESS(il2cpp_utils::FindMethodUnsafe(
-            this, "System.Collections.Generic.ICollection`1.Contains", 1));
-        return CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe<bool>(this, method, item));
-    }
-    void CopyTo(::Array<T>* array, int arrayIndex) {
-        static auto* method = CRASH_UNLESS(il2cpp_utils::FindMethodUnsafe(
-            this, "System.Collections.Generic.ICollection`1.CopyTo", 2));
-        return CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe(this, method, array, arrayIndex));
-    }
-    int IndexOf(T item) {
-        static auto* method = CRASH_UNLESS(il2cpp_utils::FindMethodUnsafe(this, "System.Collections.Generic.IList`1.IndexOf", 1));
-        return CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe<int>(this, method, item));
-    }
-};
 
 #ifdef HAS_CODEGEN
 #include "System/Collections/Generic/List_1.hpp"
