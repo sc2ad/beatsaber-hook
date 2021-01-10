@@ -1,6 +1,7 @@
 #include "../../shared/utils/il2cpp-utils-methods.hpp"
 #include "../../shared/utils/hashing.hpp"
 #include <sstream>
+#include "../../shared/utils/typedefs.h"
 
 namespace std {
     // From https://www.boost.org/doc/libs/1_55_0/doc/html/hash/reference.html#boost.hash_combine

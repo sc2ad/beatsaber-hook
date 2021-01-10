@@ -52,7 +52,6 @@ struct Il2CppObject;
 struct Il2CppClass;
 struct Il2CppImage;
 struct Il2CppArray;
-struct Il2CppMemoryCallbacks;
 struct Il2CppType;
 struct MethodInfo;
 struct FieldInfo;

@@ -5,6 +5,7 @@
 #include <map>
 #include <unordered_map>
 #include "../../shared/utils/alphanum.hpp"
+#include "../../shared/utils/typedefs.h"
 
 namespace il2cpp_utils {
     static int indent = -1;

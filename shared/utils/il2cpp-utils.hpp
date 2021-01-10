@@ -1,4 +1,3 @@
-#include "typedefs.h"  // needed for some il2cpp_type_check things and MulticastDelegate for MakeDelegate
 #ifndef IL2CPP_UTILS_H
 #define IL2CPP_UTILS_H
 
@@ -20,6 +19,7 @@
 #include <string>
 #include <string_view>
 #include <optional>
+#include "typedefs.h"
 
 namespace il2cpp_utils {
     // Seriously, don't un-const the returned Type
