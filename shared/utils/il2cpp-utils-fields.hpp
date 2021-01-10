@@ -1,4 +1,3 @@
-#include "typedefs.h"
 #ifndef IL2CPP_UTILS_FIELDS
 #define IL2CPP_UTILS_FIELDS
 #include "il2cpp-functions.hpp"
@@ -29,7 +28,7 @@ namespace il2cpp_utils {
     template<class T, class... TArgs>
     ::std::enable_if_t<!::std::is_convertible_v<T, ::std::string_view>, FieldInfo*>
     FindField(T&& instance, TArgs&&... params) {
-        static auto logger = getLogger().WithContext("FindField");
+        static auto& logger = getLogger();
         il2cpp_functions::Init();
 
         auto* klass = RET_0_UNLESS(logger, ExtractClass(instance));
@@ -40,7 +39,7 @@ namespace il2cpp_utils {
     // Assumes a static field if instance == nullptr
     // Created by darknight1050, modified by Sc2ad and zoller27osu
     ::std::optional<TOut> GetFieldValue(Il2CppObject* instance, FieldInfo* field) {
-        static auto logger = getLogger().WithContext("GetFieldValue");
+        static auto& logger = getLogger();
         il2cpp_functions::Init();
         RET_NULLOPT_UNLESS(logger, field);
 
@@ -64,7 +63,7 @@ namespace il2cpp_utils {
     // Gets the value of the field with type TOut and the given name from the given class
     // Adapted by zoller27osu
     ::std::optional<TOut> GetFieldValue(T&& classOrInstance, ::std::string_view fieldName) {
-        static auto logger = getLogger().WithContext("GetFieldValue");
+        static auto& logger = getLogger();
         auto* field = RET_NULLOPT_UNLESS(logger, FindField(classOrInstance, fieldName));
         Il2CppObject* obj = ToIl2CppObject(classOrInstance);  // null is allowed (for T = Il2CppType* or Il2CppClass*)
         return GetFieldValue<TOut>(obj, field);
@@ -73,7 +72,7 @@ namespace il2cpp_utils {
     template<typename TOut = Il2CppObject*>
     // Gets the value of the static field with the given name from the class with the given nameSpace and className.
     ::std::optional<TOut> GetFieldValue(::std::string_view nameSpace, ::std::string_view className, ::std::string_view fieldName) {
-        static auto logger = getLogger().WithContext("GetFieldValue");
+        static auto& logger = getLogger();
         auto* klass = RET_NULLOPT_UNLESS(logger, GetClassFromName(nameSpace, className));
         return GetFieldValue<TOut>(klass, fieldName);
     }
@@ -83,7 +82,7 @@ namespace il2cpp_utils {
     // Assumes static field if instance == nullptr
     template<class TArg>
     bool SetFieldValue(Il2CppObject* instance, FieldInfo* field, TArg&& value) {
-        static auto logger = getLogger().WithContext("SetFieldValue");
+        static auto& logger = getLogger();
         il2cpp_functions::Init();
         RET_0_UNLESS(logger, field);
 
@@ -104,7 +103,7 @@ namespace il2cpp_utils {
     // Returns false if it fails
     template<class T, class TArg>
     bool SetFieldValue(T& classOrInstance, ::std::string_view fieldName, TArg&& value) {
-        static auto logger = getLogger().WithContext("SetFieldValue");
+        static auto& logger = getLogger();
         auto* field = RET_0_UNLESS(logger, FindField(classOrInstance, fieldName));
         Il2CppObject* obj = ToIl2CppObject(classOrInstance);  // null is allowed (for T = Il2CppType* or Il2CppClass*)
         RET_0_UNLESS(logger, SetFieldValue(obj, field, value));
@@ -116,7 +115,7 @@ namespace il2cpp_utils {
     // Returns false if it fails
     template<class TArg>
     bool SetFieldValue(::std::string_view nameSpace, ::std::string_view className, ::std::string_view fieldName, TArg&& value) {
-        static auto logger = getLogger().WithContext("SetFieldValue");
+        static auto& logger = getLogger();
         auto* klass = RET_0_UNLESS(logger, GetClassFromName(nameSpace, className));
         return SetFieldValue(klass, fieldName, value);
     }
@@ -124,14 +123,14 @@ namespace il2cpp_utils {
     // Intializes an object (using the given args) fit to be assigned to the given field.
     template<typename... TArgs>
     Il2CppObject* CreateFieldValue(FieldInfo* field, TArgs&& ...args) {
-        static auto logger = getLogger().WithContext("CreateFieldValue");
+        static auto& logger = getLogger();
         auto* klass = RET_0_UNLESS(logger, GetFieldClass(field));
         return il2cpp_utils::New(klass, args...);
     }
 
     template<typename... TArgs>
     Il2CppObject* CreateFieldValueUnsafe(FieldInfo* field, TArgs&& ...args) {
-        static auto logger = getLogger().WithContext("CreateFieldValueUnsafe");
+        static auto& logger = getLogger();
         auto* klass = RET_0_UNLESS(logger, GetFieldClass(field));
         return il2cpp_utils::NewUnsafe(klass, args...);
     }

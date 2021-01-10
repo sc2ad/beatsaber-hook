@@ -1,4 +1,3 @@
-#include "typedefs.h"
 #ifndef IL2CPP_FUNCTIONS_H
 #define IL2CPP_FUNCTIONS_H
 
@@ -47,6 +46,40 @@ struct gnu_string {
 #endif  // UNITY_2019
 
 #endif
+
+struct Il2CppAssembly;
+struct Il2CppObject;
+struct Il2CppClass;
+struct Il2CppImage;
+struct Il2CppArray;
+struct Il2CppMemoryCallbacks;
+struct Il2CppType;
+struct MethodInfo;
+struct FieldInfo;
+struct PropertyInfo;
+
+struct EventInfo;
+struct Il2CppDomain;
+struct Il2CppReflectionType;
+struct Il2CppException;
+struct Il2CppProfiler;
+struct Il2CppThread;
+struct Il2CppReflectionMethod;
+struct Il2CppManagedMemorySnapshot;
+struct Il2CppStackFrameInfo;
+struct Il2CppCustomAttrInfo;
+struct Il2CppGenericClass;
+struct Il2CppDefaults;
+
+struct Il2CppTypeDefinition;
+struct Il2CppGenericParameter;
+struct Il2CppGenericContainer;
+
+#include "il2cpp-api-types.h"
+#include "il2cpp-metadata.h"
+#include "il2cpp-class-internals.h"
+// #include "il2cpp-object-internals.h"
+
 
 typedef std::vector<const Il2CppAssembly*> AssemblyVector;
 
@@ -353,7 +386,7 @@ class il2cpp_functions {
     // must be done on-demand because the pointers aren't necessarily correct at the time of il2cpp_functions::Init
     static void CheckS_GlobalMetadata() {
         if (!s_GlobalMetadataHeader) {
-            static auto logger = getFuncLogger().WithContext("CheckS_GlobalMetadata");
+            static auto& logger = getFuncLogger();
             s_GlobalMetadata = *(il2cpp_functions::s_GlobalMetadataPtr);
             s_GlobalMetadataHeader = *(il2cpp_functions::s_GlobalMetadataHeaderPtr);
             logger.debug("sanity: %X (should be 0xFAB11BAF)", s_GlobalMetadataHeader->sanity);

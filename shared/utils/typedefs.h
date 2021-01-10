@@ -65,9 +65,10 @@ struct Array;
 #include <stdint.h>
 #include <stddef.h>
 #include "il2cpp-windowsruntime-types.h"
-#endif
+#else
 // TODO: find a way to include this without putting the types in the global namespace?
 #include "il2cpp-object-internals.h"
+#endif
 
 struct DelegateData;
 // See il2cpp-object-internals.h/Il2CppDelegate
