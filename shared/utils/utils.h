@@ -1,6 +1,8 @@
 #ifndef UTILS_H_INCLUDED
 #define UTILS_H_INCLUDED
 
+#pragma pack(push)
+
 #include <cxxabi.h>
 #if __has_include(<string_view>)
 #include <string_view>
@@ -470,5 +472,7 @@ inlineHook((uint32_t)addr); \
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
+
+#pragma pack(pop)
 
 #endif /* UTILS_H_INCLUDED */

@@ -1,5 +1,8 @@
 #ifndef IL2CPP_UTILS_EXCEPTIONS
 #define IL2CPP_UTILS_EXCEPTIONS
+
+#pragma pack(push)
+
 #include <exception>
 #include <string_view>
 #include <string>
@@ -36,5 +39,7 @@ namespace il2cpp_utils {
     };
     #endif
 }
+
+#pragma pack(pop)
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef IL2CPP_FUNCTIONS_H
 #define IL2CPP_FUNCTIONS_H
 
+#pragma pack(push)
+
 #include <cstddef>
 #include <stdio.h>
 #include <stdlib.h>
@@ -414,5 +416,7 @@ class il2cpp_functions {
 
     static LoggerContextObject& getFuncLogger();
 };
+
+#pragma pack(pop)
 
 #endif /* IL2CPP_FUNCTIONS_H */

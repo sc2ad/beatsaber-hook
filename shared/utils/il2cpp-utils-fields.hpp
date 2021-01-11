@@ -1,5 +1,8 @@
 #ifndef IL2CPP_UTILS_FIELDS
 #define IL2CPP_UTILS_FIELDS
+
+#pragma pack(push)
+
 #include "il2cpp-functions.hpp"
 #include <optional>
 #include "il2cpp-utils-methods.hpp"
@@ -135,5 +138,7 @@ namespace il2cpp_utils {
         return il2cpp_utils::NewUnsafe(klass, args...);
     }
 }
+
+#pragma pack(pop)
 
 #endif

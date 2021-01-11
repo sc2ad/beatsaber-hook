@@ -1,4 +1,7 @@
 #pragma once
+
+#pragma pack(push)
+
 #include "logging.hpp"
 #include "il2cpp-type-check.hpp"
 #include "il2cpp-functions.hpp"
@@ -140,3 +143,5 @@ namespace il2cpp_utils {
     // Mainly used in AddTypeToNametoClassHashTable
     void AddNestedTypesToNametoClassHashTable(const Il2CppImage* img, const Il2CppTypeDefinition* typeDefinition);
 }
+
+#pragma pack(pop)

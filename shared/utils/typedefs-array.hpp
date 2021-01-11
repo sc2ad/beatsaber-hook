@@ -1,5 +1,7 @@
 #pragma once
 
+#pragma pack(push)
+
 #ifdef HAS_CODEGEN
 typedef int32_t il2cpp_array_lower_bound_t;
 #define IL2CPP_ARRAY_MAX_INDEX ((int32_t) 0x7fffffff)
@@ -117,3 +119,5 @@ struct Array : public Il2CppArray
         return CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe<int>(this, method, item));
     }
 };
+
+#pragma pack(pop)

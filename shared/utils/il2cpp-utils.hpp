@@ -1,6 +1,8 @@
 #ifndef IL2CPP_UTILS_H
 #define IL2CPP_UTILS_H
 
+#pragma pack(push)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <dlfcn.h>
@@ -295,4 +297,7 @@ namespace il2cpp_utils {
         }
     }
 }
+
+#pragma pack(pop)
+
 #endif /* IL2CPP_UTILS_H */

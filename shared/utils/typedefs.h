@@ -1,6 +1,8 @@
 #ifndef TYPEDEFS_H
 #define TYPEDEFS_H
 
+#pragma pack(push)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <type_traits>
@@ -430,5 +432,7 @@ struct Il2CppNameToTypeDefinitionIndexHashTable : public Il2CppHashMap<std::pair
     {
     }
 };
+
+#pragma pack(pop)
 
 #endif /* TYPEDEFS_H */

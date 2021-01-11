@@ -1,5 +1,8 @@
 #ifndef IL2CPP_UTILS_METHODS
 #define IL2CPP_UTILS_METHODS
+
+#pragma pack(push)
+
 #include "il2cpp-functions.hpp"
 #include "logging.hpp"
 #include <vector>
@@ -470,5 +473,7 @@ namespace il2cpp_utils {
         return NewUnsafe<TOut, creationType>(klass, args...);
     }
 }
+
+#pragma pack(pop)
 
 #endif

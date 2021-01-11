@@ -2,6 +2,8 @@
 #ifndef IL2CPP_TYPE_CHECK_H
 #define IL2CPP_TYPE_CHECK_H
 
+#pragma pack(push)
+
 #if __has_include(<concepts>)
 #include <concepts>
 template<typename T>
@@ -293,4 +295,7 @@ namespace il2cpp_utils {
         };
     }
 }
+
+#pragma pack(pop)
+
 #endif /* #ifndef IL2CPP_TYPE_CHECK_H */

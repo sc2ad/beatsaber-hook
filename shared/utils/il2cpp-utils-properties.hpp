@@ -1,5 +1,8 @@
 #ifndef IL2CPP_UTILS_PROPERTIES
 #define IL2CPP_UTILS_PROPERTIES
+
+#pragma pack(push)
+
 #include "il2cpp-functions.hpp"
 #include <optional>
 #include "il2cpp-utils-methods.hpp"
@@ -85,5 +88,7 @@ namespace il2cpp_utils {
         return SetPropertyValue<checkTypes>(klass, propName, value);
     }
 }
+
+#pragma pack(pop)
 
 #endif
