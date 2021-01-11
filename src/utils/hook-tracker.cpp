@@ -86,7 +86,7 @@ void HookTracker::CombineHooks() noexcept {
     while ((dp = readdir(dir)) != NULL) {
         if (std::string(dp->d_name).starts_with("libbeatsaber-hook")) {
             // Find and combine
-            auto* path = tmpPath.append(dp->d_name).c_str();
+            auto* path = (tmpPath + dp->d_name).c_str();
             auto* image = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
             auto* err = dlerror();
             if (image == nullptr || err != nullptr) {

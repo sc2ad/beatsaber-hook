@@ -96,13 +96,13 @@ class Logger {
             }
             emplace_safe(buffer);
         }
-        Logger(const ModInfo info) : Logger(info, LoggerOptions{false, false}) {}
-        ~Logger() {
-            auto match = &buffer;
-            std::scoped_lock<std::mutex> lock(bufferMutex);
-            // Remove ourselves
-            buffers.remove(match);
+        Logger(const ModInfo info) : options(LoggerOptions(false, false)), tag("QuestHook[" + info.id + "|v" + info.version + "]"), modInfo(info), buffer(modInfo) {
+            if (!init()) {
+                buffer.closed = true;
+            }
+            emplace_safe(buffer);
         }
+        ~Logger() = delete;
         void log(Logging::Level lvl, std::string str);
         template<typename... TArgs>
         void log(Logging::Level lvl, std::string_view fmt, TArgs... args) {
