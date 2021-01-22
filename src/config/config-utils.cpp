@@ -88,4 +88,15 @@ std::string Configuration::getConfigFilePath(const ModInfo& info) {
     return *Configuration::configDir + info.id + ".json";
 }
 
+static std::optional<std::string> dataDir;
+std::string getDataDir(const ModInfo& info) {
+    if (!dataDir) {
+        dataDir = string_format(PERSISTENT_DIR, Modloader::getApplicationId().c_str());
+        if (!direxists(*dataDir)) {
+            mkpath(*dataDir);
+        }
+    }
+    return *dataDir + info.id.c_str() + "/";
+}
+
 #endif /* CONFIG_DEFINED_H */
