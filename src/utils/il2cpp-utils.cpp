@@ -235,6 +235,21 @@ namespace il2cpp_utils {
         return obj;
     }
 
+    void* __AllocateUnsafe(std::size_t size) {
+        il2cpp_functions::Init();
+        // Because we want to allocate this object using C# GC, we will do a bit of a hack here.
+        // Essentially, we take advantage of the instance size of System.Object, and then IMMEDIATELY revert it.
+        // If we fail for ANY REASON in here, VERY BAD THINGS can happen.
+        static auto* objKlass = CRASH_UNLESS(GetClassFromName("System", "Object"));
+        // Ideally, we make this atomic, but because we aren't using locks anywhere, we hope for the best...
+        // TODO: Acquire object class special lock
+        auto origSize = objKlass->instance_size;
+        objKlass->instance_size = static_cast<decltype(origSize)>(size);
+        auto* instance = il2cpp_functions::object_new(objKlass);
+        objKlass->instance_size = origSize;
+        return instance;
+    }
+
     Il2CppString* createcsstr(std::string_view inp, StringType type) {
         static auto logger = getLogger().WithContext("createcsstr");
         il2cpp_functions::Init();

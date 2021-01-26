@@ -22,6 +22,7 @@
 #include <string_view>
 #include <optional>
 #include "typedefs.h"
+#include <functional>
 
 namespace il2cpp_utils {
     // Seriously, don't un-const the returned Type
@@ -169,6 +170,111 @@ namespace il2cpp_utils {
         static auto& logger = getLogger();
         auto* delegateType = RET_0_UNLESS(logger, il2cpp_functions::field_get_type(field));
         return MakeDelegate<T>(delegateType, arg1, arg2);
+    }
+
+    /// @brief The wrapper for an invokable delegate with a context.
+    /// @tparam I The instance type, which must be move-constructible.
+    /// @tparam R The return type of the function being called.
+    /// @tparam TArgs The argument types of the function being called.
+    template<class I, class R, class... TArgs>
+    struct WrapperInstance {
+        I rawInstance;
+        std::function<R(I*, TArgs...)> wrappedFunc;
+    };
+
+    /// @brief The wrapper for an invokable delegate without an existing context.
+    /// @tparam R The return type of the function being called.
+    /// @tparam TArgs The argument types of the function being called.
+    template<class R, class... TArgs>
+    struct WrapperStatic {
+        std::function<R(TArgs...)> wrappedFunc;
+    };
+
+    /// @brief The invoker function for a delegate that has a non-trivial context.
+    /// @tparam I The wrapped instance type.
+    /// @tparam R The return type of the function.
+    /// @tparam TArgs The argument types of the function.
+    /// @param instance The wrapped instance of this context function.
+    /// @param args The arguments to pass to this function.
+    /// @return The return from the wrapped function.
+    template<class I, class R, class... TArgs>
+    R __attribute__((noinline)) invoker_func_instance(WrapperInstance<I, R, TArgs...>* instance, TArgs... args) {
+        if constexpr (std::is_same_v<R, void>) {
+            instance->wrappedFunc(&instance->rawInstance, args...);
+        } else {
+            return instance->wrappedFunc(&instance->rawInstance, args...);
+        }
+    }
+
+    /// @brief The invoker function for a delegate with a wrapped type.
+    /// @tparam R The return type of the function.
+    /// @tparam TArgs The argument types of the function.
+    /// @param instance The wrapped instance of this context function.
+    /// @param args The arguments to pass to this function.
+    /// @return The return from the wrapped function.
+    template<class R, class... TArgs>
+    R __attribute__((noinline)) invoker_func_static(WrapperStatic<R, TArgs...>* instance, TArgs... args) {
+        if constexpr (std::is_same_v<R, void>) {
+            instance->wrappedFunc(args...);
+        } else {
+            return instance->wrappedFunc(args...);
+        }
+    }
+
+    /// @brief EXTREMEMLY UNSAFE ALLOCATION! THIS SHOULD BE AVOIDED UNLESS YOU KNOW WHAT YOU ARE DOING!
+    /// This function allocates a GC-able object of the size provided by manipulating an existing Il2CppClass' instance_size.
+    /// This is VERY DANGEROUS (and NOT THREAD SAFE!) and may cause all sorts of race conditions. Use at your own risk.
+    /// @param size The size to allocat the unsafe object with.
+    /// @return The returned GC-allocated instance.
+    void* __AllocateUnsafe(std::size_t size);
+
+    /// @brief Makes a delegate wrapping a context function (such as a context lambda).
+    /// @tparam T The type to return.
+    /// @tparam I The instance object to provide to this delegate.
+    /// @tparam R The return type of the delegate.
+    /// @tparam TArgs The arguments of the delegate.
+    /// @param delegateClass The Il2CppClass* of the delegate to create.
+    /// @param instance The (move constructible) instance reference to provide to the delegate. This instance is moved and will no longer be valid.
+    /// @param f The function to invoke with the delegate.
+    /// @return The created delegate.
+    template<typename T = MulticastDelegate*, class I, class R, class... TArgs>
+    T MakeDelegate(const Il2CppClass* delegateClass, I& instance, std::function<R(I*, TArgs...)> f) {
+        auto* wrapperInstance = reinterpret_cast<WrapperInstance<I, R, TArgs...>*>(__AllocateUnsafe(sizeof(WrapperInstance<I, R, TArgs...>)));
+
+        wrapperInstance->rawInstance = std::move(instance);
+        wrapperInstance->wrappedFunc = f;
+        return MakeDelegate<T>(delegateClass, wrapperInstance, &invoker_func_instance<I, R, TArgs...>);
+    }
+
+    /// @brief Makes a delegate wrapping a context function (such as a context lambda).
+    /// @tparam T The type to return.
+    /// @tparam I The instance object to provide to this delegate.
+    /// @tparam R The return type of the delegate.
+    /// @tparam TArgs The arguments of the delegate.
+    /// @param delegateClass The Il2CppClass* of the delegate to create.
+    /// @param instance The (move constructible) instance reference to provide to the delegate. This instance is moved and will no longer be valid.
+    /// @param f The function to invoke with the delegate.
+    /// @return The created delegate.
+    template<typename T = MulticastDelegate*, class R, class... TArgs>
+    T MakeDelegate(const Il2CppClass* delegateClass, std::function<R(TArgs...)> f) {
+        auto* wrapperInstance = reinterpret_cast<WrapperStatic<R, TArgs...>*>(__AllocateUnsafe(sizeof(WrapperStatic<R, TArgs...>)));
+
+        wrapperInstance->wrappedFunc = f;
+        return MakeDelegate<T>(delegateClass, wrapperInstance, &invoker_func_static<R, TArgs...>);
+    }
+
+    /// @brief Makes a delegate wrapping the provided instance method.
+    /// @tparam T The type to return.
+    /// @tparam I The instance object.
+    /// @tparam R The return type of the delegate.
+    /// @tparam TArgs The arguments of the delegate.
+    /// @param delegateClass The Il2CppClass* of the delegate to create.
+    /// @param instance The (move constructible) instance reference to provide to the delegate. This instance is moved and will no longer be valid.
+    /// @param memberFunc A pointer to the member function on the provided instance to invoke for this delegate.
+    /// @return The created delegate. 
+    template<typename T = MulticastDelegate*, class I, class R, class... TArgs>
+    inline T MakeDelegate(const Il2CppClass* delegateClass, I& instance, R (I::*memberFunc)(TArgs...)) {
+        return MakeDelegate<T>(delegateClass, instance, std::function<R(I*, TArgs...)>(memberFunc));
     }
 
     // Intializes an object (using the given args) fit to be passed to the given method at the given parameter index.
