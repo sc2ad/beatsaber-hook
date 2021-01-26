@@ -186,7 +186,7 @@ namespace il2cpp_utils {
     /// @tparam R The return type of the function being called.
     /// @tparam TArgs The argument types of the function being called.
     template<class R, class... TArgs>
-    struct WrapperStatic {
+    struct WrapperStatic : Il2CppObject {
         std::function<R(TArgs...)> wrappedFunc;
     };
 
@@ -258,8 +258,8 @@ namespace il2cpp_utils {
     template<typename T = MulticastDelegate*, class R, class... TArgs>
     T MakeDelegate(const Il2CppClass* delegateClass, std::function<R(TArgs...)> f) {
         auto* wrapperInstance = reinterpret_cast<WrapperStatic<R, TArgs...>*>(__AllocateUnsafe(sizeof(WrapperStatic<R, TArgs...>)));
-
         wrapperInstance->wrappedFunc = f;
+        wrapperInstance->klass = GetClassFromName("System", "Object");
         return MakeDelegate<T>(delegateClass, wrapperInstance, &invoker_func_static<R, TArgs...>);
     }
 
