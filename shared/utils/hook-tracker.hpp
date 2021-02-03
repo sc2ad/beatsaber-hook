@@ -7,9 +7,9 @@
 /// @brief Stores information about an installed hook.
 struct HookInfo {
     const std::string name;
-    const void* const destination;
-    const void* const trampoline;
-    const void* const orig;
+    const void* destination;
+    const void* trampoline;
+    const void* orig;
     HookInfo(std::string_view name_, void* dst, void* src, void* orig_)
         : name(name_.data()), destination(dst), trampoline(src), orig(orig_) {}
     bool operator==(const HookInfo& other) const {

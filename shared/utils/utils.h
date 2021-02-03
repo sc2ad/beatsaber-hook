@@ -316,25 +316,39 @@ retval hook_ ## name(__VA_ARGS__)
 #define INSTALL_HOOK(logger, name) MACRO_WRAP( \
 logger.info("Installing 64 bit hook: %s", #name); \
 A64HookFunction((void*)getRealOffset(addr_ ## name),(void*) hook_ ## name, (void**)&name); \
-HookTracker::AddHook(#name, (void*)getRealOffset(addr_ ## name), (void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, (void*)getRealOffset(addr_ ## name), (void*) hook_ ## name, (void*)name); \
 )
 
 #define INSTALL_HOOK_OFFSETLESS(logger, name, methodInfo) MACRO_WRAP( \
 logger.info("Installing 64 bit offsetless hook: %s at %lX", #name, asOffset(methodInfo->methodPointer)); \
 A64HookFunction((void*)methodInfo->methodPointer,(void*) hook_ ## name, (void**)&name); \
-HookTracker::AddHook(#name, (void*)methodInfo->methodPointer, (void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, (void*)methodInfo->methodPointer, (void*) hook_ ## name, (void*)name); \
 )
 
 #define INSTALL_HOOK_NAT(logger, name) MACRO_WRAP( \
 logger.info("Installing 64 bit native hook: %s", #name); \
 A64HookFunction((void*)(addr_ ## name),(void*) hook_ ## name, (void**)&name); \
-HookTracker::AddHook(#name, (void*)(addr_ ## name), (void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, (void*)(addr_ ## name), (void*) hook_ ## name, (void*)name); \
 )
 
 #define INSTALL_HOOK_DIRECT(logger, name, addr) MACRO_WRAP( \
 logger.info("Installing 64 bit direct hook: %s", #name); \
 A64HookFunction((void*)addr, (void*) hook_ ## name, (void**)&name); \
-HookTracker::AddHook(#name, (void*)addr, (void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, (void*)addr, (void*) hook_ ## name, (void*)name); \
+)
+
+#define INSTALL_HOOK_ORIG(logger, name, methodInfo) MACRO_WRAP( \
+auto* origAddr = const_cast<void*>(HookTracker::GetOrig((void*)methodInfo->methodPointer)); \
+logger.info("Installing 64 bit orig hook: %s at: %p", #name, origAddr); \
+A64HookFunction(origAddr,(void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, origAddr, (void*) hook_ ## name, (void*)name); \
+if (origAddr != (void*)methodInfo->methodPointer) { \
+        auto* hooks = const_cast<std::unordered_map<const void*, std::list<HookInfo>>*>(HookTracker::GetHooks()); \
+        auto itr = hooks->find((void*)methodInfo->methodPointer); \
+        if (itr != hooks->end() && itr->second.size() > 0) { \
+            itr->second.front().orig = (void*)name; \
+        } \
+    } \
 )
 
 // Uninstalls currently just creates a hook at the hooked address
@@ -344,25 +358,25 @@ HookTracker::AddHook(#name, (void*)addr, (void*) hook_ ## name, (void**)&name); 
 #define UNINSTALL_HOOK(logger, name) MACRO_WRAP( \
 logger.info("Uninstalling 64 bit hook: %s", #name); \
 A64HookFunction((void*)getRealOffset(addr_ ## name),(void*)name, (void**)nullptr); \
-HookTracker::RemoveHook(#name, (void*)getRealOffset(addr_ ## name), (void*) hook_ ## name, (void**)&name); \
+HookTracker::RemoveHook(#name, (void*)getRealOffset(addr_ ## name), (void*) hook_ ## name, (void*)name); \
 )
 
 #define UNINSTALL_HOOK_OFFSETLESS(logger, name, methodInfo) MACRO_WRAP( \
 logger.info("Uninstalling 64 bit offsetless hook: %s at %lX", #name, asOffset(methodInfo->methodPointer)); \
 A64HookFunction((void*)methodInfo->methodPointer,(void*)name, (void**)nullptr); \
-HookTracker::RemoveHook(#name, (void*)methodInfo->methodPointer, (void*) hook_ ## name, (void**)&name); \
+HookTracker::RemoveHook(#name, (void*)methodInfo->methodPointer, (void*) hook_ ## name, (void*)name); \
 )
 
 #define UNINSTALL_HOOK_NAT(logger, name) MACRO_WRAP( \
 logger.info("Uninstalling 64 bit native hook: %s", #name); \
 A64HookFunction((void*)(addr_ ## name),(void*)name, (void**)nullptr); \
-HookTracker::RemoveHook(#name, (void*)(addr_ ## name), (void*) hook_ ## name, (void**)&name); \
+HookTracker::RemoveHook(#name, (void*)(addr_ ## name), (void*) hook_ ## name, (void*)name); \
 )
 
 #define UNINSTALL_HOOK_DIRECT(logger, name, addr) MACRO_WRAP( \
 logger.info("Uninstalling 64 bit direct hook: %s", #name); \
 A64HookFunction((void*)addr, (void*)name, (void**)nullptr); \
-HookTracker::RemoveHook(#name, (void*)addr, (void*) hook_ ## name, (void**)&name); \
+HookTracker::RemoveHook(#name, (void*)addr, (void*) hook_ ## name, (void*)name); \
 )
 
 #else
@@ -417,6 +431,19 @@ HookTracker::AddHook(#name, (void*)(addr_ ## name), (void*) hook_ ## name, (void
 #define INSTALL_HOOK_DIRECT(logger, name, addr) MACRO_WRAP( \
 A64HookFunction((void*)addr, (void*) hook_ ## name, (void**)&name); \
 HookTracker::AddHook(#name, (void*)addr, (void*) hook_ ## name, (void**)&name); \
+)
+
+#define INSTALL_HOOK_ORIG(logger, name, methodInfo) MACRO_WRAP( \
+auto* origAddr = const_cast<void*>(HookTracker::GetOrig((void*)methodInfo->methodPointer)); \
+A64HookFunction(origAddr,(void*) hook_ ## name, (void**)&name); \
+HookTracker::AddHook(#name, origAddr, (void*) hook_ ## name, (void**)&name); \
+if (origAddr != (void*)methodInfo->methodPointer) { \
+        auto* hooks = const_cast<std::unordered_map<const void*, std::list<HookInfo>>*>(HookTracker::GetHooks()); \
+        auto itr = hooks->find((void*)methodInfo->methodPointer); \
+        if (itr != hooks->end() && itr->second.size() > 0) { \
+            itr->second.front().orig = (void*)&name; \
+        } \
+    } \
 )
 
 // Uninstalls currently just creates a hook at the hooked address
