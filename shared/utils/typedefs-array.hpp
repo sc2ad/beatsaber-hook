@@ -112,7 +112,7 @@ struct Array : public Il2CppArray
     void CopyTo(::Array<T>* array, int arrayIndex) {
         static auto* method = CRASH_UNLESS(il2cpp_utils::FindMethodUnsafe(
             this, "System.Collections.Generic.ICollection`1.CopyTo", 2));
-        return CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe(this, method, array, arrayIndex));
+        CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe(this, method, array, arrayIndex));
     }
     int IndexOf(T item) {
         static auto* method = CRASH_UNLESS(il2cpp_utils::FindMethodUnsafe(this, "System.Collections.Generic.IList`1.IndexOf", 1));
