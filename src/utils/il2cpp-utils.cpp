@@ -232,6 +232,11 @@ namespace il2cpp_utils {
             RET_0_UNLESS(logger, il2cpp_utils::RunStaticMethodUnsafe(m));
             obj->klass->cctor_finished = true;
         }
+        // This really has the weirdest syntax ever, I swear...
+        // First param is unused, second param is dereferenced and is set to third param.
+        // Second param is write barrier'd
+        // This takes advantage of the fact that the first field of an Il2CppObject is a klass.
+        il2cpp_functions::gc_wbarrier_set_field(obj, reinterpret_cast<void**>(obj), obj->klass);
         return obj;
     }
 
@@ -261,6 +266,8 @@ namespace il2cpp_utils {
                 reinterpret_cast<Il2CppObject*>(str)->klass = il2cpp_functions::defaults->string_class;
                 reinterpret_cast<Il2CppObject*>(str)->monitor = nullptr;
                 setcsstr(str, to_utf16(inp));
+                // Follows same logic as createManual
+                il2cpp_functions::gc_wbarrier_set_field(reinterpret_cast<Il2CppObject*>(str), reinterpret_cast<void**>(str), reinterpret_cast<Il2CppObject*>(str)->klass);
                 return str;
             }
             default:
