@@ -491,7 +491,7 @@ namespace il2cpp_utils {
     #ifndef BS_HOOK_USE_CONCEPTS
     ::std::enable_if_t<(... && (!::std::is_convertible_v<Il2CppClass*, TArgs> && !::std::is_convertible_v<TArgs, ::std::string_view>)), ::std::optional<TOut>>
     #else
-    requires (!::std::is_convertible_v<Il2CppClass*, TArgs> && !::std::is_convertible_v<TArgs, ::std::string_view>) ::std::optional<TOut>
+    requires (... && (!::std::is_convertible_v<Il2CppClass*, TArgs> && !::std::is_convertible_v<TArgs, ::std::string_view>)) ::std::optional<TOut>
     #endif
     New(TArgs&& ...args) {
         static auto& logger = getLogger();

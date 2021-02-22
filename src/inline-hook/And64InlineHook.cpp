@@ -48,7 +48,7 @@
 # define  A64_LOGI(...)        ((void)0)
 #endif // NDEBUG
 typedef uint32_t *__restrict *__restrict instruction;
-typedef struct
+struct context
 {
     struct fix_info
     {
@@ -70,7 +70,6 @@ typedef struct
     int64_t    endp;
     insns_info dat[A64_MAX_INSTRUCTIONS];
 
-public:
     inline bool is_in_fixing_range(const int64_t absolute_addr) {
         return absolute_addr >= this->basep && absolute_addr < this->endp;
     }
@@ -103,7 +102,7 @@ public:
             f.bp = NULL;
         }
     }
-} context;
+};
 
 //-------------------------------------------------------------------------
 
