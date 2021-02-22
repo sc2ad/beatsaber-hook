@@ -29,7 +29,7 @@ namespace std {
 
 // For use in ClassOrInstance concept
 #if __has_include(<concepts>)
-#error please alert sc2ad/beatsaber-hook that "std::concepts are live" (sharing your Android NDK version) then comment this out!
+//#warning please alert sc2ad/beatsaber-hook that "std::concepts are live" (sharing your Android NDK version) then comment this out!
 #elif __has_include(<experimental/concepts>)
 #error please alert sc2ad/beatsaber-hook that "std::experimental::concepts are live" (sharing your Android NDK version) then comment this out!
 #endif
