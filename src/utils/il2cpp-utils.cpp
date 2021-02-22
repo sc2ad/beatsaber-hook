@@ -261,10 +261,10 @@ namespace il2cpp_utils {
         switch (type) {
             case StringType::Manual: {
                 il2cpp_functions::CheckS_GlobalMetadata();
+                // TODO: Perhaps manually call createManual instead
                 auto mallocSize = sizeof(Il2CppString) + sizeof(Il2CppChar) * inp.length();
                 auto* str = RET_0_UNLESS(logger, reinterpret_cast<Il2CppString*>(calloc(1, mallocSize)));
                 reinterpret_cast<Il2CppObject*>(str)->klass = il2cpp_functions::defaults->string_class;
-                reinterpret_cast<Il2CppObject*>(str)->monitor = nullptr;
                 setcsstr(str, to_utf16(inp));
                 // Follows same logic as createManual
                 il2cpp_functions::gc_wbarrier_set_field(reinterpret_cast<Il2CppObject*>(str), reinterpret_cast<void**>(str), reinterpret_cast<Il2CppObject*>(str)->klass);

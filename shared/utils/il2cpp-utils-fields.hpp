@@ -8,6 +8,13 @@
 #include "il2cpp-utils-methods.hpp"
 #include "il2cpp-utils-classes.hpp"
 
+#if __has_include(<concepts>)
+#include <concepts>
+#ifndef BS_HOOK_NO_CONCEPTS
+#define BS_HOOK_USE_CONCEPTS
+#endif
+#endif
+
 namespace il2cpp_utils {
     // Created by zoller27osu
     // Logs information about the given FieldInfo* as log(DEBUG)
@@ -29,7 +36,11 @@ namespace il2cpp_utils {
 
     // Wrapper for FindField taking an instance to extract the Il2CppClass* from
     template<class T, class... TArgs>
+    #ifndef BS_HOOK_USE_CONCEPTS
     ::std::enable_if_t<!::std::is_convertible_v<T, ::std::string_view>, FieldInfo*>
+    #else
+    requires (!std::is_convertible_v<T, ::std::string_view>) FieldInfo*
+    #endif
     FindField(T&& instance, TArgs&&... params) {
         static auto& logger = getLogger();
         il2cpp_functions::Init();

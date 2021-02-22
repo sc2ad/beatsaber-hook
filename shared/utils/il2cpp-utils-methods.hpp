@@ -10,6 +10,13 @@
 #include "il2cpp-utils-classes.hpp"
 #include "utils.h"
 
+#if __has_include(<concepts>)
+#include <concepts>
+#ifndef BS_HOOK_NO_CONCEPTS
+#define BS_HOOK_USE_CONCEPTS
+#endif
+#endif
+
 namespace il2cpp_utils {
 
     /// @brief How to create an il2cpp object.
@@ -40,8 +47,13 @@ namespace il2cpp_utils {
         ::std::vector<Il2CppClass*> genTypes;
         ::std::vector<const Il2CppType*> argTypes;
 
+        #ifndef BS_HOOK_USE_CONCEPTS
         template <typename T, typename... TParams,
             ::std::enable_if_t<!::std::is_convertible_v<T, ::std::string_view>, int> = 0>
+        #else
+        template<typename T, typename... TParams>
+        requires (!::std::is_convertible_v<T, std::string_view>)
+        #endif
         FindMethodInfo(T&& classOrInstance, ::std::string_view methodName, TParams&&... paramTypes) {
             klass = ExtractClass(classOrInstance);
             name = methodName;
@@ -54,16 +66,26 @@ namespace il2cpp_utils {
             }
         }
 
+        #ifndef BS_HOOK_USE_CONCEPTS
         template <typename T, typename G, typename... TArgs,
             ::std::enable_if_t<!::std::is_convertible_v<Il2CppType*, G>, int> = 0>
+        #else
+        template<typename T, typename G, typename... TArgs>
+        requires (!::std::is_convertible_v<G, Il2CppType*> && !::std::is_convertible_v<G, const Il2CppType*>)
+        #endif
         FindMethodInfo(T&& classOrInstance, ::std::string_view methodName, ::std::vector<G> genericArgs, TArgs&&... args)
             : FindMethodInfo(classOrInstance, methodName, args...)
         {
             genTypes = ClassesFrom(genericArgs);
         }
 
+        #ifndef BS_HOOK_USE_CONCEPTS
         template <typename T, typename R, typename... TArgs,
             ::std::enable_if_t<!::std::is_convertible_v<R, ::std::string_view>, int> = 0>
+        #else
+        template<typename T, typename R, typename... TArgs>
+        requires (!::std::is_convertible_v<R, std::string_view>)
+        #endif
         FindMethodInfo(T&& classOrInstance, R returnTypeOrClass, ::std::string_view methodName, TArgs&&... args)
             : FindMethodInfo(classOrInstance, methodName, args...)
         {
@@ -150,7 +172,12 @@ namespace il2cpp_utils {
     /// @param argsCount The number of arguments to match (or -1 to not match at all)
     const MethodInfo* FindMethodUnsafe(::std::string_view nameSpace, ::std::string_view className, ::std::string_view methodName, int argsCount);
     const MethodInfo* FindMethod(FindMethodInfo& info);
+    #ifndef BS_HOOK_USE_CONCEPTS
     template <typename... TArgs, ::std::enable_if_t<(... && !::std::is_convertible_v<TArgs, FindMethodInfo>), int> = 0>
+    #else
+    template<typename... TArgs>
+    requires (... && !::std::is_convertible_v<TArgs, FindMethodInfo>)
+    #endif
     const MethodInfo* FindMethod(TArgs&&... args) {
         auto info = FindMethodInfo(args...);
         return FindMethod(info);
@@ -227,7 +254,12 @@ namespace il2cpp_utils {
     const MethodInfo* FindMethodUnsafe(Il2CppObject* instance, ::std::string_view methodName, int argsCount) noexcept;
     const MethodInfo* FindMethodUnsafe(::std::string_view nameSpace, ::std::string_view className, ::std::string_view methodName, int argsCount) noexcept;
     const MethodInfo* FindMethod(FindMethodInfo& info) noexcept;
+    #ifndef BS_HOOK_USE_CONCEPTS
     template <typename... TArgs, ::std::enable_if_t<(... && !::std::is_convertible_v<TArgs, FindMethodInfo>), int> = 0>
+    #else
+    template<typename... TArgs>
+    requires (... && !::std::is_convertible_v<TArgs, FindMethodInfo>)
+    #endif
     const MethodInfo* FindMethod(TArgs&&... args) noexcept {
         auto info = FindMethodInfo(args...);
         return FindMethod(info);
@@ -314,7 +346,11 @@ namespace il2cpp_utils {
     template<class TOut = Il2CppObject*, bool checkTypes = true, class T, class... TArgs>
     // Runs a (static) method with the specified method name, with return type TOut.
     // Checks the types of the parameters against the candidate methods.
+    #ifndef BS_HOOK_USE_CONCEPTS
     ::std::enable_if_t<!::std::is_convertible_v<T, ::std::string_view>, ::std::optional<TOut>>
+    #else
+    requires (!::std::is_convertible_v<T, ::std::string_view>) ::std::optional<TOut>
+    #endif
     RunMethod(T&& classOrInstance, ::std::string_view methodName, TArgs&& ...params) {
         static auto& logger = getLogger();
         if constexpr (checkTypes) {
@@ -389,7 +425,11 @@ namespace il2cpp_utils {
     template<class TOut = Il2CppObject*, class T, class... TArgs>
     // Runs a (static) method with the specified method name and number of arguments, with return type TOut.
     // DOES NOT PERFORM TYPE CHECKING.
+    #ifndef BS_HOOK_USE_CONCEPTS
     ::std::enable_if_t<::std::is_base_of_v<Il2CppClass, T> || ::std::is_base_of_v<Il2CppObject, T>, ::std::optional<TOut>>
+    #else
+    requires (::std::is_base_of_v<Il2CppClass, T> || ::std::is_base_of_v<Il2CppObject, T>) ::std::optional<TOut>
+    #endif
     RunMethodUnsafe(T* classOrInstance, ::std::string_view methodName, TArgs&& ...params) {
         static auto& logger = getLogger();
         RET_NULLOPT_UNLESS(logger, classOrInstance);
@@ -448,8 +488,12 @@ namespace il2cpp_utils {
     template<typename TOut = Il2CppObject*, CreationType creationType = CreationType::Temporary, typename... TArgs>
     // Creates a new object of the returned type using the given constructor parameters
     // Will only run a .ctor whose parameter types match the given arguments.
-    ::std::enable_if_t<(... && (!::std::is_convertible_v<Il2CppClass*, TArgs> && !::std::is_convertible_v<TArgs, ::std::string_view>)),
-    ::std::optional<TOut>> New(TArgs&& ...args) {
+    #ifndef BS_HOOK_USE_CONCEPTS
+    ::std::enable_if_t<(... && (!::std::is_convertible_v<Il2CppClass*, TArgs> && !::std::is_convertible_v<TArgs, ::std::string_view>)), ::std::optional<TOut>>
+    #else
+    requires (!::std::is_convertible_v<Il2CppClass*, TArgs> && !::std::is_convertible_v<TArgs, ::std::string_view>) ::std::optional<TOut>
+    #endif
+    New(TArgs&& ...args) {
         static auto& logger = getLogger();
         auto* klass = RET_NULLOPT_UNLESS(logger, (NoArgClass<TOut, true>()));
         return New<TOut, creationType>(klass, args...);

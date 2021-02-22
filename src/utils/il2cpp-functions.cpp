@@ -414,10 +414,10 @@ void il2cpp_functions::Init() {
     static auto logger = getFuncLogger().WithContext("Init");
     logger.info("il2cpp_functions: Init: Initializing all IL2CPP Functions...");
     dlerror();  // clears existing errors
-    auto path = Modloader::getLibIl2CppPath().c_str();
-    void *imagehandle = dlopen(path, RTLD_GLOBAL | RTLD_LAZY);
+    auto path = Modloader::getLibIl2CppPath();
+    void *imagehandle = dlopen(path.c_str(), RTLD_GLOBAL | RTLD_LAZY);
     if (!imagehandle) {
-        logger.error("Failed to dlopen %s: %s!", path, dlerror());
+        logger.error("Failed to dlopen %s: %s!", path.c_str(), dlerror());
         return;
     }
 

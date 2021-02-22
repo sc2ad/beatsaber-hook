@@ -29,9 +29,9 @@ namespace std {
 
 // For use in ClassOrInstance concept
 #if __has_include(<concepts>)
-#error please alert sc2ad/beatsaber-hook that "std::concepts are live" (sharing your Android NDK version) then comment this out!
+#include <concepts>
 #elif __has_include(<experimental/concepts>)
-#error please alert sc2ad/beatsaber-hook that "std::experimental::concepts are live" (sharing your Android NDK version) then comment this out!
+#include <experimental/concepts>
 #endif
 
 template <typename Container> struct is_vector : std::false_type { };
@@ -151,6 +151,13 @@ auto&& unwrap_optionals(T&& arg) {
 #define RET_0_UNLESS(loggerContext, ...) RET_DEFAULT_UNLESS(loggerContext, __VA_ARGS__)
 #define RET_NULLOPT_UNLESS(loggerContext, ...) RET_DEFAULT_UNLESS(loggerContext, __VA_ARGS__)
 
+#if __has_include(<concepts>)
+#define DEFINE_MEMBER_CHECKER(member) \
+template<typename T, typename U> \
+concept has_ ## member = requires(T t) { \
+    {t::member} -> std::convertible_to<U>; \
+};
+#else
 // Produces a has_[member]<T, U> type trait whose ::value tells you whether T has a member named [member] with type U.
 #define DEFINE_MEMBER_CHECKER(member) \
     template<typename T, typename U, typename Enable = void> \
@@ -160,6 +167,7 @@ auto&& unwrap_optionals(T&& arg) {
         typename std::enable_if_t< \
             std::is_same_v<decltype(T::member), U>> \
         > : std::true_type { };
+#endif
 
 #if __has_feature(cxx_rtti)
 // from https://stackoverflow.com/questions/1055452/c-get-name-of-type-in-template#comment77016419_19123821 (https://ideone.com/sqFWir)

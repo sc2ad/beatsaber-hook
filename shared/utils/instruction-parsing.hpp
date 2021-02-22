@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include "logging.hpp"
 #include "utils.h"
+#include <cassert>
 
 class Register {
 public:

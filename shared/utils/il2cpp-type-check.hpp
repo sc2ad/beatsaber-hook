@@ -6,10 +6,14 @@
 
 #if __has_include(<concepts>)
 #include <concepts>
+#include <type_traits>
 template<typename T>
-constexpr bool has_get = requires(const T& t) {
-    t.get;
+constexpr bool has_get = requires {
+    T::get();
 };
+#ifndef BS_HOOK_NO_CONCEPTS
+#define BS_HOOK_USE_CONCEPTS
+#endif
 #elif __has_include(<experimental/type_traits>)
 #include <experimental/type_traits>
 template<typename T>
@@ -58,11 +62,20 @@ namespace il2cpp_utils {
         // To fix "no member named 'get' in il2cpp_type_check::il2cpp_arg_class<Blah>", just define il2cpp_no_arg_class<Blah>!
         // The macros like DEFINE_IL2CPP_ARG_TYPE make this easy! The only reason to define an il2cpp_arg_class struct is if,
         // given a value of Blah, the class returned should depend on the value, and not in the same way as Blah's base class.
+        #ifndef BS_HOOK_USE_CONCEPTS
         template<typename T, class Enable = void>
+        #else
+        template<typename T>
+        #endif
         struct il2cpp_no_arg_class { };
 
         template<typename T>
+        #ifndef BS_HOOK_USE_CONCEPTS
         struct il2cpp_no_arg_class<T*, typename std::enable_if_t<has_get<il2cpp_no_arg_class<T>>>> {
+        #else
+        requires has_get<il2cpp_no_arg_class<T>>
+        struct il2cpp_no_arg_class<T*> {
+        #endif
             static inline Il2CppClass* get() {
                 il2cpp_functions::Init();
                 static auto& logger = getLogger();
@@ -73,7 +86,12 @@ namespace il2cpp_utils {
         };
 
         template<typename T>
+        #ifndef BS_HOOK_USE_CONCEPTS
         struct il2cpp_no_arg_class<T, typename std::enable_if_t<std::is_base_of_v<NestedType, T>>> {
+        #else
+        requires std::is_base_of_v<NestedType, T>
+        struct il2cpp_no_arg_class<T> {
+        #endif
             // TODO: make this work on any class with a `using declaring_type`, then remove NestedType
             static inline Il2CppClass* get() {
                 il2cpp_functions::Init();
@@ -207,7 +225,12 @@ namespace il2cpp_utils {
         struct il2cpp_gen_class_no_arg_class;
 
         template<typename... TArgs, template<typename... ST> class S>
+        #ifndef BS_HOOK_USE_CONCEPTS
         struct il2cpp_no_arg_class<S<TArgs...>, typename std::enable_if_t<has_get<il2cpp_gen_struct_no_arg_class<S>>>> {
+        #else
+        requires has_get<il2cpp_gen_struct_no_arg_class<S>>
+        struct il2cpp_no_arg_class<S<TArgs...>> {
+        #endif
             static inline Il2CppClass* get() {
                 auto* klass = il2cpp_gen_struct_no_arg_class<S>::get();
                 return il2cpp_utils::MakeGeneric(klass, {il2cpp_no_arg_class<TArgs>::get()...});
