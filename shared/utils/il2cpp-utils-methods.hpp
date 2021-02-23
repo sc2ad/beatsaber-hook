@@ -489,9 +489,9 @@ namespace il2cpp_utils {
     // Creates a new object of the returned type using the given constructor parameters
     // Will only run a .ctor whose parameter types match the given arguments.
     #ifndef BS_HOOK_USE_CONCEPTS
-    ::std::enable_if_t<(... && (!::std::is_convertible_v<Il2CppClass*, TArgs> && !::std::is_convertible_v<TArgs, ::std::string_view>)), ::std::optional<TOut>>
+    ::std::enable_if_t<(... && ((!::std::is_same_v<const Il2CppClass*, TArgs> || !::std::is_same_v<Il2CppClass*, TArgs>) && !::std::is_convertible_v<TArgs, ::std::string_view>)), ::std::optional<TOut>>
     #else
-    requires (... && (!::std::is_convertible_v<Il2CppClass*, TArgs> && !::std::is_convertible_v<TArgs, ::std::string_view>)) ::std::optional<TOut>
+    requires (... && ((!::std::is_same_v<const Il2CppClass*, TArgs> || !::std::is_same_v<Il2CppClass*, TArgs>) && !::std::is_convertible_v<TArgs, ::std::string_view>)) ::std::optional<TOut>
     #endif
     New(TArgs&& ...args) {
         static auto& logger = getLogger();
