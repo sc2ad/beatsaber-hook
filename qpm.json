@@ -7,9 +7,9 @@
     "version": "1.1.0",
     "url": "https://github.com/sc2ad/beatsaber-hook",
     "additionalData": {
-      "branchName": "master",
-      "soLink": "https://github.com/sc2ad/beatsaber-hook/releases/download/v0.5.8/libbeatsaber-hook.so",
-      "debugSoLink": "https://github.com/sc2ad/beatsaber-hook/releases/download/v0.5.8/debug_libbeatsaber-hook.so"
+      "branchName": "version-v1.1.0",
+      "soLink": "https://github.com/sc2ad/beatsaber-hook/releases/download/v1.1.0/libbeatsaber-hook_1_1_0.so.so",
+      "debugSoLink": "https://github.com/sc2ad/beatsaber-hook/releases/download/v1.1.0/debug_libbeatsaber-hook_1_1_0.so"
     }
   },
   "dependencies": [
