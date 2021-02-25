@@ -14,25 +14,21 @@ namespace il2cpp_utils {
     ::std::string ExceptionToString(Il2CppException* exp) noexcept;
 
     #if __has_feature(cxx_exceptions)
-    struct Il2CppUtilsException : std::exception {
+    struct Il2CppUtilsException : std::runtime_error {
         std::string context;
         std::string msg;
-        std::string func = "";
-        std::string file = "";
+        std::string func = "unknown";
+        std::string file = "unknown";
         int line = -1;
-        Il2CppUtilsException(std::string_view msg_) : msg(msg_.data()) {}
-        Il2CppUtilsException(std::string_view context_, std::string_view msg_) : context(context_.data()), msg(msg_.data()) {}
+        Il2CppUtilsException(std::string_view msg_) : msg(msg_.data()), std::runtime_error(CreateMessage(msg_.data())) {}
+        Il2CppUtilsException(std::string_view context_, std::string_view msg_) : context(context_.data()), msg(msg_.data()), std::runtime_error(CreateMessage(msg_.data(), context_.data())) {}
         Il2CppUtilsException(std::string_view msg_, std::string_view func_, std::string_view file_, int line_)
-            : msg(msg_.data()), func(func_.data()), file(file_.data()), line(line_) {}
+            : msg(msg_.data()), func(func_.data()), file(file_.data()), line(line_), std::runtime_error(CreateMessage(msg_.data(), "", func_.data(), file_.data(), line_)) {}
         Il2CppUtilsException(std::string_view context_, std::string_view msg_, std::string_view func_, std::string_view file_, int line_)
-            : context(context_.data()), msg(msg_.data()), func(func_.data()), file(file_.data()), line(line_) {}
+            : context(context_.data()), msg(msg_.data()), func(func_.data()), file(file_.data()), line(line_), std::runtime_error(CreateMessage(msg_.data(), context_.data(), func_.data(), file_.data(), line_)) {}
 
-        // Note: The created message is not explicitly freed!
-        const char* what() const noexcept override {
-            auto out = ((context.size() > 0 ? ("(" + context + ") ") : "") + msg + " in: " + func + " " + file + ":" + std::to_string(line));
-            char* y = new char[out.size() + 1];
-            strcpy(y, out.c_str());
-            return y;
+        std::string CreateMessage(std::string msg, std::string context = "", std::string func = "unknown", std::string file = "unknown", int line = -1) {
+            return ((context.size() > 0 ? ("(" + context + ") ") : "") + msg + " in: " + func + " " + file + ":" + std::to_string(line));
         }
     };
     struct RunMethodException : std::runtime_error {
