@@ -27,8 +27,12 @@ namespace il2cpp_utils {
         Il2CppUtilsException(std::string_view context_, std::string_view msg_, std::string_view func_, std::string_view file_, int line_)
             : context(context_.data()), msg(msg_.data()), func(func_.data()), file(file_.data()), line(line_) {}
 
+        // Note: The created message is not explicitly freed!
         const char* what() const noexcept override {
-            return ((context.size() > 0 ? ("(" + context + ") ") : "") + msg + " in: " + func + " " + file + ":" + std::to_string(line)).c_str();
+            auto out = ((context.size() > 0 ? ("(" + context + ") ") : "") + msg + " in: " + func + " " + file + ":" + std::to_string(line));
+            char* y = new char[out.size() + 1];
+            strcpy(y, out.c_str());
+            return y;
         }
     };
     struct RunMethodException : std::runtime_error {
