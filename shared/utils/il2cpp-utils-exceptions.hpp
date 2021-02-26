@@ -20,12 +20,12 @@ namespace il2cpp_utils {
         std::string func = "unknown";
         std::string file = "unknown";
         int line = -1;
-        Il2CppUtilsException(std::string_view msg_) : msg(msg_.data()), std::runtime_error(CreateMessage(msg_.data())) {}
-        Il2CppUtilsException(std::string_view context_, std::string_view msg_) : context(context_.data()), msg(msg_.data()), std::runtime_error(CreateMessage(msg_.data(), context_.data())) {}
+        Il2CppUtilsException(std::string_view msg_) : std::runtime_error(CreateMessage(msg_.data())), msg(msg_.data()) {}
+        Il2CppUtilsException(std::string_view context_, std::string_view msg_) : std::runtime_error(CreateMessage(msg_.data(), context_.data())), context(context_.data()), msg(msg_.data()) {}
         Il2CppUtilsException(std::string_view msg_, std::string_view func_, std::string_view file_, int line_)
-            : msg(msg_.data()), func(func_.data()), file(file_.data()), line(line_), std::runtime_error(CreateMessage(msg_.data(), "", func_.data(), file_.data(), line_)) {}
+            : std::runtime_error(CreateMessage(msg_.data(), "", func_.data(), file_.data(), line_)), msg(msg_.data()), func(func_.data()), file(file_.data()), line(line_) {}
         Il2CppUtilsException(std::string_view context_, std::string_view msg_, std::string_view func_, std::string_view file_, int line_)
-            : context(context_.data()), msg(msg_.data()), func(func_.data()), file(file_.data()), line(line_), std::runtime_error(CreateMessage(msg_.data(), context_.data(), func_.data(), file_.data(), line_)) {}
+            : std::runtime_error(CreateMessage(msg_.data(), context_.data(), func_.data(), file_.data(), line_)), context(context_.data()), msg(msg_.data()), func(func_.data()), file(file_.data()), line(line_) {}
 
         std::string CreateMessage(std::string msg, std::string context = "", std::string func = "unknown", std::string file = "unknown", int line = -1) {
             return ((context.size() > 0 ? ("(" + context + ") ") : "") + msg + " in: " + func + " " + file + ":" + std::to_string(line));

@@ -21,6 +21,7 @@ namespace std {
 #include "hook-tracker.hpp"
 
 // For use in SAFE_ABORT/CRASH_UNLESS (& RET_UNLESS if possible)
+// And also logging
 #if __has_include(<source_location>)
 #error please alert sc2ad/beatsaber-hook that "std::source_location is live" (sharing your Android NDK version) then comment this out!
 #elif __has_include(<experimental/source_location>)
