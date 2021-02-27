@@ -15,7 +15,7 @@ typedef struct Delegate : Il2CppObject {
     Il2CppMethodPointer method_ptr; // 0x8
     InvokerMethod invoke_impl; // 0xC
     Il2CppObject* m_target; // 0x10
-    IntPtr* method; // 0x14
+    void* method; // 0x14
     void* delegate_trampoline; // 0x18
     intptr_t extra_arg; // 0x1C
 
