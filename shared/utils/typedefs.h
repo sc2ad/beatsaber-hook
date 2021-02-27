@@ -111,6 +111,7 @@ typedef struct IntPtr {
 #include "typedefs-object.hpp"
 #include "typedefs-delegate.hpp"
 #include "typedefs-array.hpp"
+#include "typedefs-wrappers.hpp"
 
 #include <stdint.h>
 
