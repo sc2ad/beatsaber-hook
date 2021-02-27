@@ -1,13 +1,12 @@
 #ifndef IL2CPP_UTILS_EXCEPTIONS
 #define IL2CPP_UTILS_EXCEPTIONS
 
-#pragma pack(push)
-
 #include <exception>
 #include <string_view>
 #include <string>
 
 struct Il2CppException;
+struct MethodInfo;
 
 namespace il2cpp_utils {
     // Returns a legible string from an Il2CppException*
@@ -39,7 +38,5 @@ namespace il2cpp_utils {
     };
     #endif
 }
-
-#pragma pack(pop)
 
 #endif

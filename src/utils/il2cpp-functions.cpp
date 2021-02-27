@@ -286,6 +286,8 @@ std::string (*il2cpp_functions::_Type_GetName_)(const Il2CppType *type, Il2CppTy
 gnu_string (*il2cpp_functions::_Type_GetName_)(const Il2CppType *type, Il2CppTypeNameFormat format);
 #endif
 void (*il2cpp_functions::GC_free)(void* addr);
+void (*il2cpp_functions::GarbageCollector_SetWriteBarrier)(void** ptr);
+void* (*il2cpp_functions::GarbageCollector_AllocateFixed)(size_t sz, void* desc);
 
 Il2CppClass* (*il2cpp_functions::Class_FromIl2CppType)(Il2CppType* typ);
 Il2CppClass* (*il2cpp_functions::Class_GetPtrClass)(Il2CppClass* elementClass);
@@ -389,6 +391,53 @@ static bool find_GC_free(const int32_t* Runtime_Shutdown) {
         auto j2GC_FF = RET_0_UNLESS(logger, blr->findNthCall(5));  // BL(R)
         Instruction GC_FreeFixed(RET_0_UNLESS(logger, j2GC_FF->label));
         il2cpp_functions::GC_free = (decltype(il2cpp_functions::GC_free))RET_0_UNLESS(logger, GC_FreeFixed.label);
+    }
+    return true;
+}
+
+static bool find_GC_SetWriteBarrier(const int32_t* set_wbarrier_field) {
+    if (!set_wbarrier_field) {
+        return false;
+    }
+    static auto logger = il2cpp_functions::getFuncLogger().WithContext("find_GC_SetWriteBarrier");
+    Instruction gc_wbarrier_start(set_wbarrier_field);
+    auto* swb = RET_0_UNLESS(logger, gc_wbarrier_start.findNthCall(1));
+    il2cpp_functions::GarbageCollector_SetWriteBarrier = (decltype(il2cpp_functions::GarbageCollector_SetWriteBarrier))RET_0_UNLESS(logger, swb->label);
+    return true;
+}
+
+void* (*wrapped_gc_malloc_uncollectable)(size_t sz, long long type);
+
+void* __wrapper_gc_malloc_uncollectable(size_t sz, [[maybe_unused]] void* desc) {
+    // 2 determined from ghidra dump of caller
+    return wrapped_gc_malloc_uncollectable(sz, 2);
+}
+
+static bool trace_GC_AllocFixed(Instruction* runtime_init) {
+    static auto logger = il2cpp_functions::getFuncLogger().WithContext("trace_GC_AllocFixed");
+    // MetadataCache::InitializeGCSafe is 3rd bl after first b.ne, 2nd b(.lt, .ne)
+    auto* bne = RET_0_UNLESS(logger, runtime_init->findNthDirectBranchWithoutLink(2, -1));
+    auto* callToInitializeGC = RET_0_UNLESS(logger, bne->findNthCall(3));
+    Instruction initialization(RET_0_UNLESS(logger, callToInitializeGC->label));
+    // First bl is the thunk that is GC_Alloc_Fixed
+    auto* dst = RET_0_UNLESS(logger, initialization.findNthCall(1));
+    il2cpp_functions::GarbageCollector_AllocateFixed = (decltype(il2cpp_functions::GarbageCollector_AllocateFixed))RET_0_UNLESS(logger, dst->label);
+    return true;
+}
+
+static bool find_GC_AllocFixed(Instruction* runtime_init) {
+    if (!trace_GC_AllocFixed(runtime_init)) {
+        bool multipleMatches;
+        auto sigMatch = findUniquePattern(multipleMatches, getRealOffset(0), "f5 0f 1d f8 f4 4f 01 a9 fd 7b 02 a9"
+            "fd 83 00 91 ?? ?? ?? ?? ?? ?? ?? ?? 1f 00 20 f1 f3 03 01 2a", "GC_Malloc_Uncollectable");
+
+        if (sigMatch && !multipleMatches) {
+            // We need to make a wrapper method instead and set that.
+            wrapped_gc_malloc_uncollectable = (decltype(wrapped_gc_malloc_uncollectable))sigMatch;
+            il2cpp_functions::GarbageCollector_AllocateFixed = &__wrapper_gc_malloc_uncollectable;
+        } else {
+            return false;
+        }
     }
     return true;
 }
@@ -970,7 +1019,7 @@ void il2cpp_functions::Init() {
 
     // Assembly::GetAllAssemblies
     Instruction dga((const int32_t*)HookTracker::GetOrig(domain_get_assemblies));
-    auto j2A_GAA = CRASH_UNLESS(dga.findNthCall(1));    
+    auto* j2A_GAA = CRASH_UNLESS(dga.findNthCall(1));    
     Assembly_GetAllAssemblies = (decltype(Assembly_GetAllAssemblies))CRASH_UNLESS(j2A_GAA->label);
     logger.debug("Assembly::GetAllAssemblies found? offset: %lX", ((intptr_t)Assembly_GetAllAssemblies) - getRealOffset(0));
     usleep(1000);  // 0.001s
@@ -983,6 +1032,20 @@ void il2cpp_functions::Init() {
 
     if (find_GC_free(Runtime_Shutdown)) {
         logger.debug("gc::GarbageCollector::FreeFixed found? offset: %lX", ((intptr_t)GC_free) - getRealOffset(0));
+        usleep(1000);  // 0.001s
+    }
+
+    // GarbageCollector::SetWriteBarrier(void*)
+    if (find_GC_SetWriteBarrier((const int32_t*)HookTracker::GetOrig(gc_wbarrier_set_field))) {
+        logger.debug("GarbageCollector::SetWriteBarrier found? offset: %lX", ((intptr_t)GarbageCollector_SetWriteBarrier) - getRealOffset(0));
+        usleep(1000);  // 0.001s
+    }
+
+    // GarbageCollector::AllocateFixed(size_t, void*)
+    Instruction localInit((const int32_t*)HookTracker::GetOrig(init));
+    auto* inst = CRASH_UNLESS(localInit.findNthCall(2));
+    if (find_GC_AllocFixed(inst)) {
+        logger.debug("GarbageCollector::AllocateFixed found? offset: %lX", ((intptr_t)GarbageCollector_AllocateFixed) - getRealOffset(0));
         usleep(1000);  // 0.001s
     }
 

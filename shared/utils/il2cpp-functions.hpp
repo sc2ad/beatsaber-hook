@@ -371,6 +371,9 @@ class il2cpp_functions {
     static char* Type_GetName(const Il2CppType *type, Il2CppTypeNameFormat format);
     static void (*GC_free)(void* addr);
 
+    static void (*GarbageCollector_SetWriteBarrier)(void** ptr);
+    static void* (*GarbageCollector_AllocateFixed)(size_t sz, void* descr);
+
     static Il2CppClass* (*Class_FromIl2CppType)(Il2CppType* typ);
     static Il2CppClass* (*Class_GetPtrClass)(Il2CppClass* elementClass);
     static Il2CppClass* (*GenericClass_GetClass)(Il2CppGenericClass* gclass);
