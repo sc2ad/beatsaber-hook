@@ -209,24 +209,31 @@ intptr_t findPattern(intptr_t dwAddress, const char* pattern, intptr_t dwSearchR
         return 0;
     }
     const char* pat = pattern;  // current spot in the pattern
+    Logger::get().debug("Begin pattern match: pattern: %p, len: %d, pattern + len: %p", pattern, len, pattern + len);
 
-    // TODO: align dwAddress to word boundary first, then iterate by 4?
-    for (intptr_t pCur = dwAddress + skippedStartBytes; pCur < dwAddress + dwSearchRangeLen; pCur++) {
-        if (pat > pattern + len / 2) {
-            Logger::get().debug("haha xd: %c", pat[0]);
+    for (auto pCur = dwAddress + skippedStartBytes; pCur < dwAddress + dwSearchRangeLen; pCur++) {
+        // If pat[0] is null char, we are done, or if pat >= pattern + len
+        if (pat >= pattern + len || !pat[0] || !pat[1]) {
+            return match;
         }
-        if (pat > pattern + len) return match;
-        if (!pat[0]) return match;  // end of pattern means match is complete!
-        if (pat[0] == '\?' || *(char *)pCur == get_byte(pat)) {  // does this pCur match this pat?
-            if (!match) match = pCur - skippedStartBytes;  // start match
-            if (!pat[2]) return match;  // no more chars in pattern means match is complete!
-
+        // For each byte, if the pattern starts with a ? or the current byte matches:
+        if (pat[0] == '\?' || *(char *)pCur == get_byte(pat)) {
+            // If we do not have a match, begin it
+            if (!match) {
+                match = pCur - skippedStartBytes;
+            }
+            // If our next character is at the end of our pattern, we have a match
+            if (pat + 1 >= pattern + len) {
+                return match;
+            }
             if (pat[0] != '\?' || pat[1] == '\?') {
                 pat += 3;  // advance past "xy " or "?? "
             } else {
                 pat += 2;  // advance past "? "
             }
-        } else {
+            Logger::get().debug("Skipping to next pat: %p pattern: %p, len: %d, pattern + len: %p", pat, pattern, len, pattern + len);
+        }
+        else {
             // reset search position to beginning of the failed match; for loop will begin new search at match + 1
             if (match) pCur = match + skippedStartBytes;
             pat = pattern;
