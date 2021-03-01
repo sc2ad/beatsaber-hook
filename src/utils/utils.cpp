@@ -211,6 +211,7 @@ intptr_t findPattern(intptr_t dwAddress, const char* pattern, intptr_t dwSearchR
     for (intptr_t pCur = dwAddress + skippedStartBytes; pCur < dwAddress + dwSearchRangeLen; pCur++) {
         if (pat > pattern + len) return match;
         if (!pat[0]) return match;  // end of pattern means match is complete!
+        Logger::get().debug("haha xd: %c", pat[0]);
         if (pat[0] == '\?' || *(char *)pCur == get_byte(pat)) {  // does this pCur match this pat?
             if (!match) match = pCur - skippedStartBytes;  // start match
             if (!pat[2]) return match;  // no more chars in pattern means match is complete!
