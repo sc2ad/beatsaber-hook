@@ -380,7 +380,7 @@ static bool find_GC_free(const int32_t* Runtime_Shutdown) {
     bool multipleMatches;
     intptr_t sigMatch = findUniquePattern(multipleMatches, getRealOffset(0), "f8 5f bc a9 f6 57 01 a9 f4 4f 02 a9 "
         "fd 7b 03 a9 fd c3 00 91 a0 08 00 b4 f3 03 00 aa ?? ?? ?? ?? 69 82 56 d3 4a ?? ?? 91 4b 0d 09 8b 49 55 40 f9 "
-        "0a 9c 9c 52 0a 04 a0 72 00 cc 74 92 68 fe 56 d3 6c 01 0a 8b 0a 03 84 52", "GC_free");
+        "0a 9c 9c 52 0a 04 a0 72 00 cc 74 92 68 fe 56 d3 6c 01 0a 8b 0a 03 84 52", "GC_free", getLibil2cppSize());
     if (sigMatch && !multipleMatches) {
         il2cpp_functions::GC_free = (decltype(il2cpp_functions::GC_free))sigMatch;
     } else {
@@ -429,7 +429,7 @@ static bool find_GC_AllocFixed(Instruction* runtime_init) {
     if (!trace_GC_AllocFixed(runtime_init)) {
         bool multipleMatches;
         auto sigMatch = findUniquePattern(multipleMatches, getRealOffset(0), "f5 0f 1d f8 f4 4f 01 a9 fd 7b 02 a9"
-            "fd 83 00 91 ?? ?? ?? ?? ?? ?? ?? ?? 1f 00 20 f1 f3 03 01 2a", "GC_Malloc_Uncollectable");
+            "fd 83 00 91 ?? ?? ?? ?? ?? ?? ?? ?? 1f 00 20 f1 f3 03 01 2a", "GC_Malloc_Uncollectable", getLibil2cppSize());
 
         if (sigMatch && !multipleMatches) {
             // We need to make a wrapper method instead and set that.

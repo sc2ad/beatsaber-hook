@@ -52,4 +52,8 @@ std::string string_format(const std::string_view format, TArgs ... args)
 #pragma GCC diagnostic pop
 }
 
+/// @brief Get the size of the libil2cpp.so file
+/// @returns The size of the .so
+intptr_t getLibil2cppSize();
+
 #endif /* UTILS_FUNCTIONS_H */

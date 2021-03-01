@@ -101,6 +101,20 @@ void analyzeBytes(std::stringstream& ss, const void* ptr, int indent) {
     }
 }
 
+static intptr_t soSize = 0;
+
+intptr_t getLibil2cppSize() {
+    static auto contextLogger = Logger::get().WithContext("getSize");
+    if (soSize == 0) {
+        struct stat st;
+        if (!stat(Modloader::getLibIl2CppPath().c_str(), &st)) {
+            soSize = st.st_size;
+        }
+        contextLogger.debug("libil2cpp.so size: 0x%x", soSize);
+    }
+    return soSize;
+}
+
 void analyzeBytes(const void* ptr) {
     analyzed.clear();
     std::stringstream ss;
