@@ -205,6 +205,9 @@ intptr_t findPattern(intptr_t dwAddress, const char* pattern, intptr_t dwSearchR
     }
     intptr_t match = 0;  // current match candidate
     int len = strlen(CRASH_UNLESS(pattern));
+    if (dwSearchRangeLen < len) {
+        return 0;
+    }
     const char* pat = pattern;  // current spot in the pattern
 
     // TODO: align dwAddress to word boundary first, then iterate by 4?
