@@ -204,10 +204,12 @@ intptr_t findPattern(intptr_t dwAddress, const char* pattern, intptr_t dwSearchR
         skippedStartBytes++;
     }
     intptr_t match = 0;  // current match candidate
+    int len = strlen(CRASH_UNLESS(pattern));
     const char* pat = pattern;  // current spot in the pattern
 
     // TODO: align dwAddress to word boundary first, then iterate by 4?
     for (intptr_t pCur = dwAddress + skippedStartBytes; pCur < dwAddress + dwSearchRangeLen; pCur++) {
+        if (pat > pattern + len) return match;
         if (!pat[0]) return match;  // end of pattern means match is complete!
         if (pat[0] == '\?' || *(char *)pCur == get_byte(pat)) {  // does this pCur match this pat?
             if (!match) match = pCur - skippedStartBytes;  // start match
