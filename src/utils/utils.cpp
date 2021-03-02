@@ -288,6 +288,7 @@ intptr_t findUniquePatternInLibil2cpp(bool& multiple, const char* pattern, const
             match = findUniquePattern(multiple, startAddr, pattern, label, endAddr - startAddr);
         }
     }
+    procMap.close();
     return match;
 }
 
