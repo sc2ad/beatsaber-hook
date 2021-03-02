@@ -240,18 +240,18 @@ auto crashUnless(T&& arg, const char* func, const char* file, int line) {
 #endif
 
 template<class T>
-intptr_t getBase(T pc) {
+uintptr_t getBase(T pc) {
     static_assert(sizeof(T) >= sizeof(void*));
     Dl_info info;
     static auto& logger = Logger::get();
     RET_0_UNLESS(logger, dladdr((void*)pc, &info));
-    return (intptr_t)info.dli_fbase;
+    return (uintptr_t)info.dli_fbase;
 }
 
 template<class T>
 ptrdiff_t asOffset(T pc) {
     auto base = getBase(pc);
-    return (ptrdiff_t)(((intptr_t)pc) - base);
+    return (ptrdiff_t)(((uintptr_t)pc) - base);
 }
 
 // function_ptr_t courtesy of DaNike
@@ -293,19 +293,19 @@ void print(std::stringstream& ss, Logging::Level lvl = Logging::INFO);
 //   It will not follow pointers that it has already analyzed as a result of the current call.
 void analyzeBytes(const void* ptr);
 
-intptr_t getRealOffset(const void* offset);
-intptr_t baseAddr(const char* soname);
+uintptr_t getRealOffset(const void* offset);
+uintptr_t baseAddr(const char* soname);
 
 // Only wildcard is ? and ?? - both are handled the same way. They will skip exactly 1 byte (2 hex digits)
-intptr_t findPattern(intptr_t dwAddress, const char* pattern, intptr_t dwSearchRangeLen = 0x1000000);
+uintptr_t findPattern(uintptr_t dwAddress, const char* pattern, uintptr_t dwSearchRangeLen = 0x1000000);
 // Same as findPattern but will continue scanning to make sure your pattern is sufficiently specific.
 // Each candidate will be logged. label should describe what you're looking for, like "Class::Init".
 // Sets "multiple" iff multiple matches are found, and outputs a log warning message.
 // Returns the first match, if any.
-intptr_t findUniquePattern(bool& multiple, intptr_t dwAddress, const char* pattern, const char* label = 0, intptr_t dwSearchRangeLen = 0x1000000);
+uintptr_t findUniquePattern(bool& multiple, uintptr_t dwAddress, const char* pattern, const char* label = 0, uintptr_t dwSearchRangeLen = 0x1000000);
 
 /// @brief Attempts to match the pattern provided with all regions of mapped read memory with the libil2cpp.so
-intptr_t findUniquePatternInLibil2cpp(bool& multiple, const char* pattern, const char* label = 0);
+uintptr_t findUniquePatternInLibil2cpp(bool& multiple, const char* pattern, const char* label = 0);
 
 #define MAKE_HOOK(name, addr, retval, ...) \
 void* addr_ ## name = (void*) addr; \

@@ -86,10 +86,10 @@ void analyzeBytes(std::stringstream& ss, const void* ptr, int indent) {
         else {
             Dl_info inf;
             if (dladdr((void*)asUInts[i], &inf)) {
-                ss << " (dli_fname: " << inf.dli_fname << ", dli_fbase: " << std::hex << std::setw(16) << (intptr_t)inf.dli_fbase;
+                ss << " (dli_fname: " << inf.dli_fname << ", dli_fbase: " << std::hex << std::setw(16) << (uintptr_t)inf.dli_fbase;
                 ss << ", offset = 0x" << std::hex << std::setw(8) << (asUInts[i] - (uintptr_t)inf.dli_fbase);
                 if (inf.dli_sname) {
-                    ss << ", dli_sname: " << inf.dli_sname << ", dli_saddr: " << std::hex << std::setw(16) << (intptr_t)inf.dli_saddr;
+                    ss << ", dli_sname: " << inf.dli_sname << ", dli_saddr: " << std::hex << std::setw(16) << (uintptr_t)inf.dli_saddr;
                 }
                 ss << ")";
             }
@@ -101,9 +101,9 @@ void analyzeBytes(std::stringstream& ss, const void* ptr, int indent) {
     }
 }
 
-static intptr_t soSize = 0;
+static uintptr_t soSize = 0;
 
-intptr_t getLibil2cppSize() {
+uintptr_t getLibil2cppSize() {
     static auto contextLogger = Logger::get().WithContext("getSize");
     if (soSize == 0) {
         struct stat st;
@@ -124,13 +124,13 @@ void analyzeBytes(const void* ptr) {
     analyzeBytes(ss, ptr, 0);
 }
 
-intptr_t baseAddr(const char *soname)  // credits to https://github.com/ikoz/AndroidSubstrate_hookingC_examples/blob/master/nativeHook3/jni/nativeHook3.cy.cpp
+uintptr_t baseAddr(const char *soname)  // credits to https://github.com/ikoz/AndroidSubstrate_hookingC_examples/blob/master/nativeHook3/jni/nativeHook3.cy.cpp
 {
     void *imagehandle = dlopen(soname, RTLD_LOCAL | RTLD_LAZY);
     if (soname == NULL)
-        return (intptr_t)NULL;
+        return (uintptr_t)NULL;
     if (imagehandle == NULL)
-        return (intptr_t)NULL;
+        return (uintptr_t)NULL;
 
     FILE *f = NULL;
     char line[200] = {0};
@@ -138,7 +138,7 @@ intptr_t baseAddr(const char *soname)  // credits to https://github.com/ikoz/And
     char *tok = NULL;
     char * baseAddr = NULL;
     if ((f = fopen("/proc/self/maps", "r")) == NULL)
-        return (intptr_t)NULL;
+        return (uintptr_t)NULL;
     while (fgets(line, 199, f) != NULL)
     {
         tok = strtok_r(line, "-", &state);
@@ -163,19 +163,19 @@ intptr_t baseAddr(const char *soname)  // credits to https://github.com/ikoz/And
                 if (toklen > 0) {
                     if (toklen >= solen && strcmp(tok + (toklen - solen), soname) == 0) {
                         fclose(f);
-                        return (intptr_t)strtoll(baseAddr,NULL,16);
+                        return (uintptr_t)strtoll(baseAddr,NULL,16);
                     }
                 }
             }
         }
     }
     fclose(f);
-    return (intptr_t)NULL;
+    return (uintptr_t)NULL;
 }
 
-intptr_t location; // save lib.so base address so we do not have to recalculate every time causing lag.
+uintptr_t location; // save lib.so base address so we do not have to recalculate every time causing lag.
 
-intptr_t getRealOffset(const void* offset) // calculate dump.cs address + lib.so base address.
+uintptr_t getRealOffset(const void* offset) // calculate dump.cs address + lib.so base address.
 {
     if (location == 0)
     {
@@ -184,27 +184,27 @@ intptr_t getRealOffset(const void* offset) // calculate dump.cs address + lib.so
         // OR we make EVERYTHING on an instance level
         location = baseAddr(Modloader::getLibIl2CppPath().c_str());
     }
-    return location + (intptr_t)offset;
+    return location + (uintptr_t)offset;
 }
 
 int mkpath(std::string_view file_path) {
     return system((std::string("mkdir -p -m +rw ") + file_path.data()).c_str());
 }
 
-intptr_t findPattern(intptr_t dwAddress, const char* pattern, intptr_t dwSearchRangeLen) {
+uintptr_t findPattern(uintptr_t dwAddress, const char* pattern, uintptr_t dwSearchRangeLen) {
     #define in_range(x, a, b) (x >= a && x <= b)
     #define get_bits(x) (in_range((x & (~0x20)), 'A', 'F') ? ((x & (~0x20)) - 'A' + 0xA): (in_range(x, '0', '9') ? x - '0': 0))
     #define get_byte(x) (get_bits(x[0]) << 4 | get_bits(x[1]))
 
     // To avoid a lot of bad match candidates, pre-process wildcards at the front of the pattern
-    intptr_t skippedStartBytes = 0;
+    uintptr_t skippedStartBytes = 0;
     while(pattern[0] == '\?') {
         // see comments below for insight on these numbers
         pattern += (pattern[1] == '\?') ? 3 : 2;
         skippedStartBytes++;
     }
     uintptr_t match = 0;  // current match candidate
-    int len = strlen(CRASH_UNLESS(pattern));
+    uintptr_t len = strlen(CRASH_UNLESS(pattern));
     if (dwSearchRangeLen < len) {
         return 0;
     }
@@ -243,8 +243,8 @@ intptr_t findPattern(intptr_t dwAddress, const char* pattern, intptr_t dwSearchR
     return 0;
 }
 
-intptr_t findUniquePattern(bool& multiple, intptr_t dwAddress, const char* pattern, const char* label, intptr_t dwSearchRangeLen) {
-    intptr_t firstMatchAddr = 0, newMatchAddr, start = dwAddress, dwEnd = dwAddress + dwSearchRangeLen;
+uintptr_t findUniquePattern(bool& multiple, uintptr_t dwAddress, const char* pattern, const char* label, uintptr_t dwSearchRangeLen) {
+    uintptr_t firstMatchAddr = 0, newMatchAddr, start = dwAddress, dwEnd = dwAddress + dwSearchRangeLen;
     int matches = 0;
     Logger::get().debug("Sigscan for pattern: %s", pattern);
     while (start > 0 && start < dwEnd && (newMatchAddr = findPattern(start, pattern, dwEnd - start))) {
@@ -262,11 +262,11 @@ intptr_t findUniquePattern(bool& multiple, intptr_t dwAddress, const char* patte
     return firstMatchAddr;
 }
 
-intptr_t findUniquePatternInLibil2cpp(bool& multiple, const char* pattern, const char* label) {
+uintptr_t findUniquePatternInLibil2cpp(bool& multiple, const char* pattern, const char* label) {
     // Essentially call findUniquePattern for each segment listed in /proc/self/maps
     std::ifstream procMap("/proc/self/maps");
     std::string line;
-    intptr_t match = 0;
+    uintptr_t match = 0;
     while (std::getline(procMap, line)) {
         if (line.find("libil2cpp.so") == std::string::npos) {
             continue;

@@ -202,7 +202,7 @@ Instruction* Instruction::findNthImmOffsetOnReg(int n, uint_fast8_t reg, int ret
 Instruction::Instruction(const int32_t* inst) {
     static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("Instruction");
     addr = inst;
-    auto pc = (intptr_t)inst;
+    auto pc = (uintptr_t)inst;
     auto base = getBase(pc);
     if (!base) {
         logger.critical("Instruction::Instruction: Could not get the .so base for pointer %p. "
@@ -1191,10 +1191,10 @@ InstructionTree* FindOrCreateInstruction(const int32_t* pc, ParseState& parseSta
     auto p = parseState.codeToInstTree.find(pc);
     static auto logger = Logger::get().WithContext("instruction-parsing").WithContext("FindOrCreateInstruction");
     if (p != parseState.codeToInstTree.end()) {
-        logger.debug("not recursing: InstructionTree for %p (offset %lX) already exists", pc, asOffset((intptr_t)pc));
+        logger.debug("not recursing: InstructionTree for %p (offset %lX) already exists", pc, asOffset((uintptr_t)pc));
         return p->second;
     } else {
-        logger.debug("%s (pc %p, offset %lX)", msg, pc, asOffset((intptr_t)pc));
+        logger.debug("%s (pc %p, offset %lX)", msg, pc, asOffset((uintptr_t)pc));
         auto inst = new (std::nothrow) InstructionTree(pc);
         parseState.frontier.push({inst, parseState.dependencyMap});  // the inserted depMap is a copy
         parseState.codeToInstTree[pc] = inst;
@@ -1304,12 +1304,12 @@ std::ostream& operator<<(std::ostream& os, const AssemblyFunction& func) {
     os << std::hex << std::uppercase;
     os << "Function candidates: " << std::endl;
     for (auto p : func.parseState.functionCandidates) {
-        os << "0x" << uintptr_t(p.first) << " (offset 0x" << asOffset((intptr_t)p.first) << "): depMap "
+        os << "0x" << uintptr_t(p.first) << " (offset 0x" << asOffset((uintptr_t)p.first) << "): depMap "
             << DepMapToString(p.second) << std::endl;
     }
     os << "Other jumps: " << std::endl;
     for (auto p : func.parseState.otherJumps) {
-        os << "0x" << uintptr_t(p.first) << " (offset 0x" << asOffset((intptr_t)p.first) << "): depMap "
+        os << "0x" << uintptr_t(p.first) << " (offset 0x" << asOffset((uintptr_t)p.first) << "): depMap "
             << DepMapToString(p.second) << std::endl;
     }
     return os << std::nouppercase << std::dec;

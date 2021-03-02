@@ -146,7 +146,7 @@ namespace il2cpp_utils {
         static auto logger = getLogger().WithContext("BuildGenericsMap");
         il2cpp_functions::Init();
         auto* metadataReg = RET_V_UNLESS(logger, *il2cpp_functions::s_Il2CppMetadataRegistrationPtr);
-        logger.debug("metadataReg: %p, offset = %lX", metadataReg, ((intptr_t)metadataReg) - getRealOffset(0));
+        logger.debug("metadataReg: %p, offset = %lX", metadataReg, ((uintptr_t)metadataReg) - getRealOffset(0));
 
         int uncached_class_count = 0;
         for (int i=0; i < metadataReg->genericClassesCount; i++) {
