@@ -209,7 +209,6 @@ uintptr_t findPattern(uintptr_t dwAddress, const char* pattern, uintptr_t dwSear
         return 0;
     }
     const char* pat = pattern;  // current spot in the pattern
-    Logger::get().debug("Begin pattern match: pattern: %p, len: %d, pattern + len: %p", pattern, len, pattern + len);
 
     for (uintptr_t pCur = dwAddress + skippedStartBytes; pCur < dwAddress + dwSearchRangeLen; pCur++) {
         // If pat[0] is null char, we are done, or if pat >= pattern + len
@@ -231,7 +230,6 @@ uintptr_t findPattern(uintptr_t dwAddress, const char* pattern, uintptr_t dwSear
             } else {
                 pat += 2;  // advance past "? "
             }
-            Logger::get().debug("Skipping to next pat: %p pattern: %p, len: %d, pattern + len: %p", pat, pattern, len, pattern + len);
         }
         else {
             // reset search position to beginning of the failed match; for loop will begin new search at match + 1
