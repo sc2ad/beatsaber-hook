@@ -304,6 +304,9 @@ intptr_t findPattern(intptr_t dwAddress, const char* pattern, intptr_t dwSearchR
 // Returns the first match, if any.
 intptr_t findUniquePattern(bool& multiple, intptr_t dwAddress, const char* pattern, const char* label = 0, intptr_t dwSearchRangeLen = 0x1000000);
 
+/// @brief Attempts to match the pattern provided with all regions of mapped read memory with the libil2cpp.so
+intptr_t findUniquePatternInLibil2cpp(bool& multiple, const char* pattern, const char* label = 0);
+
 #define MAKE_HOOK(name, addr, retval, ...) \
 void* addr_ ## name = (void*) addr; \
 retval (*name)(__VA_ARGS__) = NULL; \

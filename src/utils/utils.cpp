@@ -203,7 +203,7 @@ intptr_t findPattern(intptr_t dwAddress, const char* pattern, intptr_t dwSearchR
         pattern += (pattern[1] == '\?') ? 3 : 2;
         skippedStartBytes++;
     }
-    intptr_t match = 0;  // current match candidate
+    uintptr_t match = 0;  // current match candidate
     int len = strlen(CRASH_UNLESS(pattern));
     if (dwSearchRangeLen < len) {
         return 0;
@@ -211,7 +211,7 @@ intptr_t findPattern(intptr_t dwAddress, const char* pattern, intptr_t dwSearchR
     const char* pat = pattern;  // current spot in the pattern
     Logger::get().debug("Begin pattern match: pattern: %p, len: %d, pattern + len: %p", pattern, len, pattern + len);
 
-    for (auto pCur = dwAddress + skippedStartBytes; pCur < dwAddress + dwSearchRangeLen; pCur++) {
+    for (uintptr_t pCur = dwAddress + skippedStartBytes; pCur < dwAddress + dwSearchRangeLen; pCur++) {
         // If pat[0] is null char, we are done, or if pat >= pattern + len
         if (pat >= pattern + len || !pat[0] || !pat[1]) {
             return match;
@@ -260,6 +260,35 @@ intptr_t findUniquePattern(bool& multiple, intptr_t dwAddress, const char* patte
         Logger::get().warning("Multiple sig scan matches for \"%s\"!", label);
     }
     return firstMatchAddr;
+}
+
+intptr_t findUniquePatternInLibil2cpp(bool& multiple, const char* pattern, const char* label) {
+    // Essentially call findUniquePattern for each segment listed in /proc/self/maps
+    std::ifstream procMap("/proc/self/maps");
+    std::string line;
+    intptr_t match = 0;
+    while (std::getline(procMap, line)) {
+        if (line.find("libil2cpp.so") == std::string::npos) {
+            continue;
+        }
+        auto idx = line.find_first_of('-');
+        if (idx == std::string::npos) {
+            CRASH_UNLESS(false);
+        }
+        auto startAddr = std::stoul(line.substr(0, idx), nullptr, 16);
+        auto spaceIdx = line.find_first_of(' ');
+        if (spaceIdx == std::string::npos) {
+            CRASH_UNLESS(false);
+        }
+        auto endAddr = std::stoul(line.substr(idx + 1, spaceIdx - idx - 1), nullptr, 16);
+        // Permissions are 4 characters
+        auto perms = line.substr(spaceIdx + 1, 4);
+        if (perms.find('r') != std::string::npos) {
+            // Search between start and end
+            match = findUniquePattern(multiple, startAddr, pattern, label, endAddr - startAddr);
+        }
+    }
+    return match;
 }
 
 // C# SPECIFIC
