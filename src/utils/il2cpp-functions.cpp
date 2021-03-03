@@ -417,7 +417,8 @@ static bool trace_GC_AllocFixed(Instruction* runtime_init) {
     static auto logger = il2cpp_functions::getFuncLogger().WithContext("trace_GC_AllocFixed");
     // MetadataCache::InitializeGCSafe is 3rd bl after first b.ne, 2nd b(.lt, .ne)
     auto* bne = RET_0_UNLESS(logger, runtime_init->findNthDirectBranchWithoutLink(2, -1));
-    auto* callToInitializeGC = RET_0_UNLESS(logger, bne->findNthCall(3));
+    Instruction bne_inst(RET_0_UNLESS(logger, bne->label));
+    auto* callToInitializeGC = RET_0_UNLESS(logger, bne_inst.findNthCall(3));
     Instruction initialization(RET_0_UNLESS(logger, callToInitializeGC->label));
     // First bl is the thunk that is GC_Alloc_Fixed
     auto* dst = RET_0_UNLESS(logger, initialization.findNthCall(1));
