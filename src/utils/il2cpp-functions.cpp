@@ -401,7 +401,7 @@ static bool find_GC_SetWriteBarrier(const int32_t* set_wbarrier_field) {
     }
     static auto logger = il2cpp_functions::getFuncLogger().WithContext("find_GC_SetWriteBarrier");
     Instruction gc_wbarrier_start(set_wbarrier_field);
-    auto* swb = RET_0_UNLESS(logger, gc_wbarrier_start.findNthCall(1));
+    auto* swb = RET_0_UNLESS(logger, gc_wbarrier_start.findNthDirectBranchWithoutLink(1));
     il2cpp_functions::GarbageCollector_SetWriteBarrier = (decltype(il2cpp_functions::GarbageCollector_SetWriteBarrier))RET_0_UNLESS(logger, swb->label);
     return true;
 }
@@ -413,10 +413,11 @@ void* __wrapper_gc_malloc_uncollectable(size_t sz, [[maybe_unused]] void* desc) 
     return wrapped_gc_malloc_uncollectable(sz, 2);
 }
 
-static bool trace_GC_AllocFixed(Instruction* runtime_init) {
+static bool trace_GC_AllocFixed(Instruction* runtime_init_call) {
     static auto logger = il2cpp_functions::getFuncLogger().WithContext("trace_GC_AllocFixed");
     // MetadataCache::InitializeGCSafe is 3rd bl after first b.ne, 2nd b(.lt, .ne)
-    auto* bne = RET_0_UNLESS(logger, runtime_init->findNthDirectBranchWithoutLink(2, -1));
+    Instruction runtime_init(RET_0_UNLESS(logger, runtime_init_call->label));
+    auto* bne = RET_0_UNLESS(logger, runtime_init.findNthDirectBranchWithoutLink(2, -1));
     Instruction bne_inst(RET_0_UNLESS(logger, bne->label));
     auto* callToInitializeGC = RET_0_UNLESS(logger, bne_inst.findNthCall(3));
     Instruction initialization(RET_0_UNLESS(logger, callToInitializeGC->label));
@@ -426,8 +427,8 @@ static bool trace_GC_AllocFixed(Instruction* runtime_init) {
     return true;
 }
 
-static bool find_GC_AllocFixed(Instruction* runtime_init) {
-    if (!trace_GC_AllocFixed(runtime_init)) {
+static bool find_GC_AllocFixed(Instruction* runtime_init_call) {
+    if (!trace_GC_AllocFixed(runtime_init_call)) {
         bool multipleMatches;
         auto sigMatch = findUniquePatternInLibil2cpp(multipleMatches, "f5 0f 1d f8 f4 4f 01 a9 fd 7b 02 a9"
             "fd 83 00 91 ?? ?? ?? ?? ?? ?? ?? ?? 1f 00 20 f1 f3 03 01 2a", "GC_Malloc_Uncollectable");
