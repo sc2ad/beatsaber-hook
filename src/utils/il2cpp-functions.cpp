@@ -415,9 +415,9 @@ void* __wrapper_gc_malloc_uncollectable(size_t sz, [[maybe_unused]] void* desc) 
 
 static bool trace_GC_AllocFixed(Instruction* runtime_init_call) {
     static auto logger = il2cpp_functions::getFuncLogger().WithContext("trace_GC_AllocFixed");
-    // MetadataCache::InitializeGCSafe is 3rd bl after first b.ne, 2nd b(.lt, .ne)
+    // MetadataCache::InitializeGCSafe is 3rd bl after first b.ne, which is the 6th b(.lt, .ne), t(bz, nz), c(bz, nz)
     Instruction runtime_init(RET_0_UNLESS(logger, runtime_init_call->label));
-    auto* bne = RET_0_UNLESS(logger, runtime_init.findNthDirectBranchWithoutLink(2, -1));
+    auto* bne = RET_0_UNLESS(logger, runtime_init.findNthDirectBranchWithoutLink(6, -1));
     Instruction bne_inst(RET_0_UNLESS(logger, bne->label));
     auto* callToInitializeGC = RET_0_UNLESS(logger, bne_inst.findNthCall(3));
     Instruction initialization(RET_0_UNLESS(logger, callToInitializeGC->label));
