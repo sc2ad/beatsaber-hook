@@ -92,7 +92,7 @@ namespace il2cpp_utils {
     {
         il2cpp_functions::Init();
         static auto logger = getLogger().WithContext("FindMethodUnsafe");
-        THROW_OR_RET_NULL(logger, klass);
+        RET_DEFAULT_UNLESS(logger, klass);
 
         // Check Cache
         auto innerPair = std::pair<std::string, decltype(MethodInfo::parameters_count)>(methodName, argsCount);
@@ -106,7 +106,7 @@ namespace il2cpp_utils {
         if (!methodInfo) {
             logger.error("could not find method %s with %i parameters in class '%s'!", methodName.data(), argsCount, ClassStandardName(klass).c_str());
             LogMethods(logger, const_cast<Il2CppClass*>(klass), true);
-            THROW_OR_RET_NULL(logger, methodInfo);
+            RET_DEFAULT_UNLESS(logger, methodInfo);
         }
         classesNamesToMethodsCache.emplace(key, methodInfo);
         return methodInfo;
@@ -129,7 +129,7 @@ namespace il2cpp_utils {
     {
         static auto logger = getLogger().WithContext("FindMethodUnsafe");
         il2cpp_functions::Init();
-        auto klass = THROW_OR_RET_NULL(logger, il2cpp_functions::object_get_class(instance));
+        auto klass = RET_DEFAULT_UNLESS(logger, il2cpp_functions::object_get_class(instance));
         return FindMethodUnsafe(klass, methodName, argsCount);
     }
 
@@ -142,7 +142,7 @@ namespace il2cpp_utils {
         static auto logger = getLogger().WithContext("FindMethod");
         il2cpp_functions::Init();
         auto* klass = info.klass;
-        THROW_OR_RET_NULL(logger, klass);
+        RET_DEFAULT_UNLESS(logger, klass);
 
         // TODO: make cache work for generics (stratify by generics count?) and differing return types?
         // Check Cache
@@ -210,7 +210,7 @@ namespace il2cpp_utils {
             ss << ") in class '" << ClassStandardName(klass) << "'!";
             logger.error("%s", ss.str().c_str());
             LogMethods(logger, klass);
-            THROW_OR_RET_NULL(logger, !methodInfo || multipleBasicMatches);
+            RET_DEFAULT_UNLESS(logger, !methodInfo || multipleBasicMatches);
         }
         classesNamesTypesToMethodsCache.emplace(key, methodInfo);
         return methodInfo;
