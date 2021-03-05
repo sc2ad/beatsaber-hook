@@ -370,7 +370,7 @@ namespace il2cpp_utils {
                 auto* method = RET_NULLOPT_UNLESS(logger, FindMethodUnsafe(classOrInstance, methodName, sizeof...(TArgs)));
                 return RunMethod<TOut, false>(classOrInstance, method, params...);
             } else {
-                auto* klass = RET_NULLOPT_UNLESS(ExtractClass(classOrInstance));
+                auto* klass = RET_NULLOPT_UNLESS(logger, ExtractClass(classOrInstance));
                 auto* method = RET_NULLOPT_UNLESS(logger, FindMethodUnsafe(klass, methodName, sizeof...(TArgs)));
                 return RunMethod<TOut, false>(classOrInstance, method, params...);
             }
