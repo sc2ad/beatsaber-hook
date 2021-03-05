@@ -76,7 +76,7 @@ namespace il2cpp_utils {
         if (!klass) {
             logger.error("Failed to determine class! Tips: instead of nullptr, pass the Il2CppType* or Il2CppClass* of the argument instead!");
         }
-        return THROW_OR_RET_NULL(logger, klass);
+        return klass;
     }
 
     template<class T, bool ResultRequired = false>

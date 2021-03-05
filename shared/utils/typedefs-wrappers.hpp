@@ -54,6 +54,14 @@ struct SafePtr {
         il2cpp_functions::GC_free(internalHandle);
     }
 
+    /// @brief Returns true if this instance's internal handle holds a pointer of ANY value (including nullptr)
+    /// false otherwise.
+    operator bool() const {
+        return internalHandle != nullptr;
+    }
+
+    /// @brief Dereferences the instance pointer to a reference type of the held instance.
+    /// Throws a NullHandleException if there is no internal handle.
     T& operator *() {
         __SAFE_PTR_NULL_HANDLE_CHECK(internalHandle, *internalHandle->instancePointer);
     }
@@ -70,7 +78,7 @@ struct SafePtr {
         __SAFE_PTR_NULL_HANDLE_CHECK(internalHandle, internalHandle->instancePointer);
     }
 
-    T& operator *() const {
+    const T& operator *() const {
         __SAFE_PTR_NULL_HANDLE_CHECK(internalHandle, *internalHandle->instancePointer);
     }
 
