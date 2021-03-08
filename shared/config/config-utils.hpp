@@ -75,13 +75,13 @@ typedef enum JsonParseError {
 
 // CONFIG
 // Parses the JSON of the filename, and returns whether it succeeded or not
-static bool parsejsonfile(rapidjson::Document& doc, std::string_view filename);
+bool parsejsonfile(rapidjson::Document& doc, std::string_view filename);
 // Parses a JSON string, and returns whether it succeeded or not
-static bool parsejson(ConfigDocument& doc, std::string_view js);
+bool parsejson(ConfigDocument& doc, std::string_view js);
 
 /// @brief Returns a path to the persistent data directory for the provided const ModInfo&.
 /// @param info The const ModInfo& to find a path for.
 /// @return The path to the directory.
-static std::string getDataDir(const ModInfo& info);
+std::string getDataDir(const ModInfo& info);
 
 #endif /* CONFIG_UTILS_H */
