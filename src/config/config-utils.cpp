@@ -99,4 +99,14 @@ std::string getDataDir(const ModInfo& info) {
     return *dataDir + info.id.c_str() + "/";
 }
 
+std::string getDataDir(std::string_view id) {
+    if (!dataDir) {
+        dataDir = string_format(PERSISTENT_DIR, Modloader::getApplicationId().c_str());
+        if (!direxists(*dataDir)) {
+            mkpath(*dataDir);
+        }
+    }
+    return *dataDir + id.data() + "/";
+}
+
 #endif /* CONFIG_DEFINED_H */

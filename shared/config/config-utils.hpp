@@ -9,6 +9,7 @@
 #include "rapidjson-utils.hpp"
 #include "modloader/shared/modloader.hpp"
 #include <string>
+#include <string_view>
 
 // typedef rapidjson::GenericDocument<rapidjson::UTF8<>, rapidjson::CrtAllocator> ConfigDocument;
 // typedef rapidjson::GenericValue<rapidjson::UTF8<>, rapidjson::CrtAllocator> ConfigValue;
@@ -83,5 +84,10 @@ bool parsejson(ConfigDocument& doc, std::string_view js);
 /// @param info The const ModInfo& to find a path for.
 /// @return The path to the directory.
 std::string getDataDir(const ModInfo& info);
+
+/// @brief Returns a path to the persistent data directory for ID.
+/// @param id The id to find a path for.
+/// @return The path to the directory.
+std::string getDataDir(std::string_view id);
 
 #endif /* CONFIG_UTILS_H */
