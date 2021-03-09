@@ -977,7 +977,8 @@ void il2cpp_functions::Init() {
 
     // MetadataCache::GetTypeInfoFromTypeIndex. offset 0x84F764 in 1.5, 0x9F5250 in 1.7.0, 0xA7A79C in 1.8.0b1
     Instruction caha((const int32_t*)HookTracker::GetOrig(custom_attrs_has_attr));
-    Instruction MetadataCache_HasAttribute(CRASH_UNLESS(caha.label));
+    auto mchab = CRASH_UNLESS(caha.findNthDirectBranchWithoutLink(1));
+    Instruction MetadataCache_HasAttribute(CRASH_UNLESS(mchab->label));
     auto j2MC_GTIFTI = CRASH_UNLESS(MetadataCache_HasAttribute.findNthCall(1));
     MetadataCache_GetTypeInfoFromTypeIndex = (decltype(MetadataCache_GetTypeInfoFromTypeIndex))CRASH_UNLESS(j2MC_GTIFTI->label);
     logger.debug("MetadataCache::GetTypeInfoFromTypeIndex found? offset: %lX",
@@ -986,7 +987,8 @@ void il2cpp_functions::Init() {
 
     // MetadataCache::GetTypeInfoFromTypeDefinitionIndex. offset 0x84FBA4 in 1.5, 0x9F5690 in 1.7.0, 0xA75958 in 1.8.0b1
     Instruction tgcoec((const int32_t*)HookTracker::GetOrig(type_get_class_or_element_class));
-    Instruction Type_GetClassOrElementClass(CRASH_UNLESS(tgcoec.label));
+    auto tgoecb = CRASH_UNLESS(tgcoec.findNthDirectBranchWithoutLink(1));
+    Instruction Type_GetClassOrElementClass(CRASH_UNLESS(tgoecb->label));
     auto j2MC_GTIFTDI = CRASH_UNLESS(Type_GetClassOrElementClass.findNthDirectBranchWithoutLink(5));
     MetadataCache_GetTypeInfoFromTypeDefinitionIndex =
         (decltype(MetadataCache_GetTypeInfoFromTypeDefinitionIndex))CRASH_UNLESS(j2MC_GTIFTDI->label);
@@ -1003,7 +1005,8 @@ void il2cpp_functions::Init() {
 
     // GenericClass::GetClass. offset 0x88DF64 in 1.5, 0xA34F20 in 1.7.0, 0xA6E4EC in 1.8.0b1
     Instruction cfit((const int32_t*)HookTracker::GetOrig(class_from_il2cpp_type));
-    Class_FromIl2CppType = (decltype(Class_FromIl2CppType))CRASH_UNLESS(cfit.label);
+    auto b = CRASH_UNLESS(cfit.findNthDirectBranchWithoutLink(1));
+    Class_FromIl2CppType = (decltype(Class_FromIl2CppType))CRASH_UNLESS(b->label);
     auto caseStart = CRASH_UNLESS(EvalSwitch(Class_FromIl2CppType, 1, 1, IL2CPP_TYPE_GENERICINST));
     auto j2GC_GC = CRASH_UNLESS(caseStart->findNthDirectBranchWithoutLink(1));
     logger.debug("j2GC_GC: %s", j2GC_GC->toString().c_str());
@@ -1030,7 +1033,8 @@ void il2cpp_functions::Init() {
     CRASH_UNLESS(shutdown);
     // GC_free
     Instruction sd((const int32_t*)HookTracker::GetOrig(shutdown));
-    auto* Runtime_Shutdown = CRASH_UNLESS(sd.label);
+    auto sdb = CRASH_UNLESS(sd.findNthDirectBranchWithoutLink(1));
+    auto* Runtime_Shutdown = CRASH_UNLESS(sdb->label);
 
     if (find_GC_free(Runtime_Shutdown)) {
         logger.debug("gc::GarbageCollector::FreeFixed found? offset: %lX", ((uintptr_t)GC_free) - getRealOffset(0));
