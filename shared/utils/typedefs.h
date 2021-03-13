@@ -250,8 +250,10 @@ typedef System::Reflection::Assembly Il2CppReflectionAssembly;
 #include "System/Reflection/Emit/UnmanagedMarshal.hpp"
 typedef System::Reflection::Emit::UnmanagedMarshal Il2CppReflectionMarshal;
 
+/* Stripped in 1.13.5 Update
 #include "System/Reflection/ManifestResourceInfo.hpp"
 typedef System::Reflection::ManifestResourceInfo Il2CppManifestResourceInfo;
+*/
 
 #include "System/Reflection/Pointer.hpp"
 typedef System::Reflection::Pointer Il2CppReflectionPointer;
