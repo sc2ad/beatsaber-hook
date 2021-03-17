@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include "../../shared/utils/alphanum.hpp"
 #include "../../shared/utils/typedefs.h"
+#include "shared/utils/gc-alloc.hpp"
 
 namespace il2cpp_utils {
     static int indent = -1;
@@ -256,7 +257,7 @@ namespace il2cpp_utils {
     void AddNestedTypesToNametoClassHashTable(Il2CppNameToTypeDefinitionIndexHashTable* hashTable, const char *namespaze, const std::string& parentName, Il2CppClass *klass) {
         il2cpp_functions::Init();
         std::string name = parentName + "/" + klass->name;
-        char *pName = (char*)calloc(name.size() + 1, sizeof(char));
+        char *pName = (char*)gc_alloc_specific(name.size() + 1 * sizeof(char));
         strcpy(pName, name.c_str());
 
         hashTable->insert(std::make_pair(std::make_pair(namespaze, (const char*)pName), il2cpp_functions::MetadataCache_GetIndexForTypeDefinition(klass)));

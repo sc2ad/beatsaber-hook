@@ -1,4 +1,5 @@
 #include <utility>  // for std::pair
+#include "shared/utils/gc-alloc.hpp"
 #include "../../shared/utils/hashing.hpp"
 #include "../../shared/utils/il2cpp-utils.hpp"
 #include "../../shared/utils/utils.h"
@@ -223,7 +224,7 @@ namespace il2cpp_utils {
             return nullptr;
         }
         // Allocate object
-        auto* obj = reinterpret_cast<Il2CppObject*>(calloc(1, klass->instance_size));
+        auto* obj = reinterpret_cast<Il2CppObject*>(gc_alloc_specific(klass->instance_size));
         obj->klass = const_cast<Il2CppClass*>(klass);
         // Call cctor, we don't bother making a new thread for the type initializer. BE WARNED!
         if (klass->has_cctor && !klass->cctor_finished && !klass->cctor_started) {
@@ -263,7 +264,7 @@ namespace il2cpp_utils {
                 il2cpp_functions::CheckS_GlobalMetadata();
                 // TODO: Perhaps manually call createManual instead
                 auto mallocSize = sizeof(Il2CppString) + sizeof(Il2CppChar) * inp.length();
-                auto* str = RET_0_UNLESS(logger, reinterpret_cast<Il2CppString*>(calloc(1, mallocSize)));
+                auto* str = reinterpret_cast<Il2CppString*>(gc_alloc_specific(mallocSize));
                 reinterpret_cast<Il2CppObject*>(str)->klass = il2cpp_functions::defaults->string_class;
                 setcsstr(str, to_utf16(inp));
                 // Follows same logic as createManual

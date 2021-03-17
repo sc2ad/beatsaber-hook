@@ -1,9 +1,31 @@
 // Taken from: https://github.com/nike4613/BeatMods2/blob/master/BeatMods2/include/util/json.h
 #ifndef UTIL_JSON_H
 #define UTIL_JSON_H
+#ifdef RAPIDJSON_HAS_STDSTRING
+#if RAPIDJSON_HAS_STDSTRING == 0
+#warning "Include rapidjson-utils.hpp before any rapidjson includes!"
+#endif
+#else
 #define RAPIDJSON_HAS_STDSTRING 1
+#endif
+
+#include "../utils/gc-alloc.hpp"
+
+// Override rapidjson allocation functions
+#ifndef RAPIDJSON_MALLOC
+#define RAPIDJSON_MALLOC(sz) gc_alloc_specific(sz)
+#endif
+
+#ifndef RAPIDJSON_REALLOC
+#define RAPIDJSON_REALLOC(ptr, new_size) gc_realloc_specific(ptr, new_size)
+#endif
+
+#ifndef RAPIDJSON_FREE
+#define RAPIDJSON_FREE(ptr) gc_free_specific(ptr)
+#endif
 
 #include <type_traits>
+#include "../rapidjson/include/rapidjson/rapidjson.h"
 #include "../rapidjson/include/rapidjson/document.h"
 #include "../rapidjson/include/rapidjson/allocators.h"
 #include "../rapidjson/include/rapidjson/prettywriter.h"

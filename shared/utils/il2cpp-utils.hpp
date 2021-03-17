@@ -9,6 +9,8 @@
 #include <optional>
 #include <vector>
 
+#include "gc-alloc.hpp"
+
 #include "il2cpp-functions.hpp"
 #include "logging.hpp"
 #include "utils.h"
@@ -75,7 +77,7 @@ namespace il2cpp_utils {
         */
         // Lets cache this method. Well formed delegates have only one Invoke method, so ignore param count.
         auto* invoke = il2cpp_utils::FindMethodUnsafe(delegateClass, "Invoke", -1);
-        auto* method = (MethodInfo*) calloc(1, sizeof(MethodInfo));
+        auto* method = reinterpret_cast<MethodInfo*>(gc_alloc_specific(sizeof(MethodInfo)));
         // Add the allocated delegate so we can free it later.
         method->methodPointer = (Il2CppMethodPointer)callback;
         method->invoker_method = NULL;

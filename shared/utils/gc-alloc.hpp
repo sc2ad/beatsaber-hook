@@ -12,6 +12,12 @@
 /// @return The allocated instance.
 void gc_free_specific(void* ptr) noexcept;
 
+/// @brief Reallocation implementation is equivalent to: alloc + free
+/// @param ptr The pointer to resize.
+/// @param new_size The new size of the memory.
+/// @return The resized instance.
+[[nodiscard]] void* gc_realloc_specific(void* ptr, std::size_t new_size);
+
 /// @brief Returns an allocated instance of the provided size that will not be written over by future GC allocations.
 /// You MUST use the delete operator defined here to destroy it.
 /// @param sz The size to allocate an instance of.
