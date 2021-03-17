@@ -86,6 +86,7 @@ namespace il2cpp_utils {
         if (obj == nullptr) method->flags |= METHOD_ATTRIBUTE_STATIC;
 
         // TODO: figure out why passing method directly doesn't work
+        // TODO: auto-free MethodInfo* after Delegate instance is GC'd
         auto* delegate = RET_DEFAULT_UNLESS(logger, il2cpp_utils::NewUnsafe<T>(delegateClass, obj, &method));
         auto* asDelegate = reinterpret_cast<Delegate*>(delegate);
         AddAllocatedDelegate(asDelegate);

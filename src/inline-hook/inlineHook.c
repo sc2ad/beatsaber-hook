@@ -277,6 +277,7 @@ enum ele7en_status registerInlineHook(uint32_t target_addr, uint32_t new_addr, u
 	item->proto_addr = proto_addr;
 
 	item->length = TEST_BIT0(item->target_addr) ? 12 : 8;
+	// TODO: Allocate this in a place where GC doesn't ruin it
 	item->orig_instructions = malloc(item->length);
 	memcpy(item->orig_instructions, (void *) CLEAR_BIT0(item->target_addr), item->length);
 
