@@ -23,19 +23,26 @@ CRASH_UNLESS(false)
 #endif
 
 
+// TODO: Test to see if gc alloc works
+// TODO: Make an overall Ptr interface type, virtual destructor and *, -> operators
+// TODO: Remove all conversion operators? (Basically force people to guarantee lifetime of held instance?)
+
 /// @brief Represents a C++ type that wraps a C# pointer that will be valid for the entire lifetime of this instance.
 /// This instance must be created at a time such that il2cpp_functions::Init is valid, or else it will throw a CreatedTooEarlyException
 /// @tparam T The type of the instance to wrap.
 template<class T>
 struct SafePtr {
-    /// @brief
-    /// Default constructor
+    /// @brief Default constructor
     SafePtr() : internalHandle(nullptr) {}
-    /// @brief Construct a SafePtr<T> with the provided instance pointer (which may be nullptr)
+    /// @brief Construct a SafePtr<T> with the provided instance pointer (which may be nullptr).
     /// If you wish to wrap a non-existent pointer (ex, use as a default constructor) see the 0 arg constructor instead.
     SafePtr(T* wrappableInstance) : internalHandle(SafePointerWrapper::New(wrappableInstance)) {}
     /// @brief Construct a SafePtr<T> with the provided reference
     SafePtr(T& wrappableInstance) : internalHandle(SafePointerWrapper::New(std::addressof(wrappableInstance))) {}
+    /// Explicitly delete copy constructor
+    SafePtr(const SafePtr& other) = delete;
+    /// @brief Move constructor is default
+    SafePtr(SafePtr&& other) = default;
     /// @brief Destructor. Destroys the internal wrapper type, if necessary.
     /// Throws a CreateTooEarlyException/CRASH_UNLESS if a wrapper type exists and must be freed, yet GC_free does not exist.
     ~SafePtr() {
@@ -105,7 +112,9 @@ struct SafePtr {
                 CRASH_UNLESS(false);
                 #endif
             }
+            // It should be safe to assume that GC_AllocateFixed returns a non-null pointer. If it does return null, we have a pretty big issue.
             auto* wrapper = reinterpret_cast<SafePointerWrapper*>(il2cpp_functions::GarbageCollector_AllocateFixed(sizeof(SafePointerWrapper), nullptr));
+            CRASH_UNLESS(wrapper);
             wrapper->instancePointer = instance;
             return wrapper;
         }
@@ -115,4 +124,12 @@ struct SafePtr {
         T* instancePointer;
     };
     SafePointerWrapper* internalHandle;
+};
+
+
+/// @brief Represents a pointer that may be GC'd, but will notify you when it has.
+/// Currently unimplemented, requires a hook into all GC frees/collections
+template<class T>
+struct WeakPtr {
+
 };
