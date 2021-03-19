@@ -304,7 +304,7 @@ void setcsstr(Il2CppString* in, std::u16string_view str) {
 
 // Inspired by DaNike
 std::string to_utf8(std::u16string_view view) {
-    char* dat = static_cast<char*>(gc_alloc_specific(view.length() + 1 * sizeof(char)));
+    char* dat = static_cast<char*>(calloc(view.length() + 1, sizeof(char)));
     std::transform(view.data(), view.data() + view.size(), dat, [](auto utf16_char) {
         return static_cast<char>(utf16_char);
     });
@@ -315,7 +315,7 @@ std::string to_utf8(std::u16string_view view) {
 }
 
 std::u16string to_utf16(std::string_view view) {
-    char16_t* dat = static_cast<char16_t*>(gc_alloc_specific(view.length() + 1 * sizeof(char16_t)));
+    char16_t* dat = static_cast<char16_t*>(calloc(view.length() + 1, sizeof(char16_t)));
     std::transform(view.data(), view.data() + view.size(), dat, [](auto standardChar) {
         return static_cast<char16_t>(standardChar);
     });

@@ -77,7 +77,7 @@ namespace il2cpp_utils {
         */
         // Lets cache this method. Well formed delegates have only one Invoke method, so ignore param count.
         auto* invoke = il2cpp_utils::FindMethodUnsafe(delegateClass, "Invoke", -1);
-        auto* method = reinterpret_cast<MethodInfo*>(gc_alloc_specific(sizeof(MethodInfo)));
+        auto* method = reinterpret_cast<MethodInfo*>(calloc(1, sizeof(MethodInfo)));
         // Add the allocated delegate so we can free it later.
         method->methodPointer = (Il2CppMethodPointer)callback;
         method->invoker_method = NULL;
@@ -89,6 +89,7 @@ namespace il2cpp_utils {
 
         // TODO: figure out why passing method directly doesn't work
         // TODO: auto-free MethodInfo* after Delegate instance is GC'd
+        // TODO: This is horrible
         auto* delegate = RET_DEFAULT_UNLESS(logger, il2cpp_utils::NewUnsafe<T>(delegateClass, obj, &method));
         auto* asDelegate = reinterpret_cast<Delegate*>(delegate);
         AddAllocatedDelegate(asDelegate);

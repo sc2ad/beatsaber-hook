@@ -223,7 +223,7 @@ namespace il2cpp_utils {
             logger.error("Cannot create an object that does not have an initialized class: %p", klass);
             return nullptr;
         }
-        // Allocate object
+        // Allocate GC Specific object
         auto* obj = reinterpret_cast<Il2CppObject*>(gc_alloc_specific(klass->instance_size));
         obj->klass = const_cast<Il2CppClass*>(klass);
         // Call cctor, we don't bother making a new thread for the type initializer. BE WARNED!
@@ -237,7 +237,6 @@ namespace il2cpp_utils {
         // First param is unused, second param is dereferenced and is set to third param.
         // Second param is write barrier'd
         // This takes advantage of the fact that the first field of an Il2CppObject is a klass.
-        il2cpp_functions::gc_wbarrier_set_field(obj, reinterpret_cast<void**>(obj), obj->klass);
         return obj;
     }
 
@@ -264,7 +263,8 @@ namespace il2cpp_utils {
                 il2cpp_functions::CheckS_GlobalMetadata();
                 // TODO: Perhaps manually call createManual instead
                 auto mallocSize = sizeof(Il2CppString) + sizeof(Il2CppChar) * inp.length();
-                auto* str = reinterpret_cast<Il2CppString*>(gc_alloc_specific(mallocSize));
+                // String never has any references anyways
+                auto* str = reinterpret_cast<Il2CppString*>(malloc(mallocSize));
                 reinterpret_cast<Il2CppObject*>(str)->klass = il2cpp_functions::defaults->string_class;
                 setcsstr(str, to_utf16(inp));
                 // Follows same logic as createManual
