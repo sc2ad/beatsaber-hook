@@ -56,9 +56,8 @@ LoggerBuffer& get_global() {
 }
 
 // UtilsLogger will (by default) log to file.
-static auto utilsLogger = new Logger(ModInfo{"UtilsLogger", VERSION}, LoggerOptions(false, true));
-
 Logger& Logger::get() {
+    static auto utilsLogger = new Logger(ModInfo{"UtilsLogger", VERSION}, LoggerOptions(false, true));
     return *utilsLogger;
 }
 
