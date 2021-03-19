@@ -389,8 +389,10 @@ static bool find_GC_free(const int32_t* Runtime_Shutdown) {
         Instruction Runtime_Shutdown_inst(Runtime_Shutdown);
         auto blr = RET_0_UNLESS(logger, Runtime_Shutdown_inst.findNth(1, std::mem_fn(&Instruction::isIndirectBranch)));
         auto j2GC_FF = RET_0_UNLESS(logger, blr->findNthCall(5));  // BL(R)
+        if (blr != &Runtime_Shutdown_inst) delete blr;
         Instruction GC_FreeFixed(RET_0_UNLESS(logger, j2GC_FF->label));
         il2cpp_functions::GC_free = (decltype(il2cpp_functions::GC_free))RET_0_UNLESS(logger, GC_FreeFixed.label);
+        if (j2GC_FF != blr) delete j2GC_FF;
     }
     return true;
 }
@@ -403,6 +405,7 @@ static bool find_GC_SetWriteBarrier(const int32_t* set_wbarrier_field) {
     Instruction gc_wbarrier_start(set_wbarrier_field);
     auto* swb = RET_0_UNLESS(logger, gc_wbarrier_start.findNthDirectBranchWithoutLink(1));
     il2cpp_functions::GarbageCollector_SetWriteBarrier = (decltype(il2cpp_functions::GarbageCollector_SetWriteBarrier))RET_0_UNLESS(logger, swb->label);
+    if (swb != &gc_wbarrier_start) delete swb;
     return true;
 }
 
@@ -420,6 +423,7 @@ static bool trace_GC_AllocFixed(Instruction* DomainGetCurrent) {
     Instruction domainGetCurrentImpl(RET_0_UNLESS(logger, DomainGetCurrent->label));
     auto* gcAlloc = RET_0_UNLESS(logger, domainGetCurrentImpl.findNthCall(1));
     il2cpp_functions::GarbageCollector_AllocateFixed = (decltype(il2cpp_functions::GarbageCollector_AllocateFixed))RET_0_UNLESS(logger, gcAlloc->label);
+    if (gcAlloc != &domainGetCurrentImpl) delete gcAlloc;
     return true;
 }
 
@@ -969,27 +973,32 @@ void il2cpp_functions::Init() {
     auto j2Cl_I = CRASH_UNLESS(Array_NewSpecific.findNthCall(1));  // also the 113th call in Runtime::Init
     Class_Init = (decltype(Class_Init))CRASH_UNLESS(j2Cl_I->label);
     logger.debug("Class::Init found? offset: %lX", ((uintptr_t)Class_Init) - getRealOffset(0));
+    if (j2Cl_I != &Array_NewSpecific) delete j2Cl_I;
     usleep(1000);  // 0.001s
 
     // MetadataCache::GetTypeInfoFromTypeIndex. offset 0x84F764 in 1.5, 0x9F5250 in 1.7.0, 0xA7A79C in 1.8.0b1
     Instruction caha((const int32_t*)HookTracker::GetOrig(custom_attrs_has_attr));
     auto mchab = CRASH_UNLESS(caha.findNthDirectBranchWithoutLink(1));
     Instruction MetadataCache_HasAttribute(CRASH_UNLESS(mchab->label));
+    if (mchab != &caha) delete mchab;
     auto j2MC_GTIFTI = CRASH_UNLESS(MetadataCache_HasAttribute.findNthCall(1));
     MetadataCache_GetTypeInfoFromTypeIndex = (decltype(MetadataCache_GetTypeInfoFromTypeIndex))CRASH_UNLESS(j2MC_GTIFTI->label);
     logger.debug("MetadataCache::GetTypeInfoFromTypeIndex found? offset: %lX",
         ((uintptr_t)MetadataCache_GetTypeInfoFromTypeIndex) - getRealOffset(0));
+    if (j2MC_GTIFTI != &MetadataCache_HasAttribute) delete j2MC_GTIFTI;
     usleep(1000);  // 0.001s
 
     // MetadataCache::GetTypeInfoFromTypeDefinitionIndex. offset 0x84FBA4 in 1.5, 0x9F5690 in 1.7.0, 0xA75958 in 1.8.0b1
     Instruction tgcoec((const int32_t*)HookTracker::GetOrig(type_get_class_or_element_class));
     auto tgoecb = CRASH_UNLESS(tgcoec.findNthDirectBranchWithoutLink(1));
     Instruction Type_GetClassOrElementClass(CRASH_UNLESS(tgoecb->label));
+    if (tgoecb != &tgcoec) delete tgoecb;
     auto j2MC_GTIFTDI = CRASH_UNLESS(Type_GetClassOrElementClass.findNthDirectBranchWithoutLink(5));
     MetadataCache_GetTypeInfoFromTypeDefinitionIndex =
         (decltype(MetadataCache_GetTypeInfoFromTypeDefinitionIndex))CRASH_UNLESS(j2MC_GTIFTDI->label);
     logger.debug("MetadataCache::GetTypeInfoFromTypeDefinitionIndex found? offset: %lX",
         ((uintptr_t)MetadataCache_GetTypeInfoFromTypeDefinitionIndex) - getRealOffset(0));
+    if (j2MC_GTIFTDI != &Type_GetClassOrElementClass) delete j2MC_GTIFTDI;
     usleep(1000);  // 0.001s
 
     // Type::GetName. offset 0x8735DC in 1.5, 0xA1A458 in 1.7.0, 0xA7B634 in 1.8.0b1
@@ -997,25 +1006,31 @@ void il2cpp_functions::Init() {
     auto j2T_GN = CRASH_UNLESS(tanq.findNthCall(1));
     _Type_GetName_ = (decltype(_Type_GetName_))CRASH_UNLESS(j2T_GN->label);
     logger.debug("Type::GetName found? offset: %lX", ((uintptr_t)_Type_GetName_) - getRealOffset(0));
+    if (j2T_GN != &tanq) delete j2T_GN;
     usleep(1000);  // 0.001s
 
     // GenericClass::GetClass. offset 0x88DF64 in 1.5, 0xA34F20 in 1.7.0, 0xA6E4EC in 1.8.0b1
     Instruction cfit((const int32_t*)HookTracker::GetOrig(class_from_il2cpp_type));
     auto b = CRASH_UNLESS(cfit.findNthDirectBranchWithoutLink(1));
     Class_FromIl2CppType = (decltype(Class_FromIl2CppType))CRASH_UNLESS(b->label);
+    if (b != &cfit) delete b;
     auto caseStart = CRASH_UNLESS(EvalSwitch(Class_FromIl2CppType, 1, 1, IL2CPP_TYPE_GENERICINST));
     auto j2GC_GC = CRASH_UNLESS(caseStart->findNthDirectBranchWithoutLink(1));
+    delete caseStart;
     logger.debug("j2GC_GC: %s", j2GC_GC->toString().c_str());
     GenericClass_GetClass = (decltype(GenericClass_GetClass))CRASH_UNLESS(j2GC_GC->label);
     logger.debug("GenericClass::GetClass found? offset: %lX", ((uintptr_t)GenericClass_GetClass) - getRealOffset(0));
+    if (j2GC_GC != caseStart) delete j2GC_GC;
     usleep(1000);  // 0.001s
 
     // Class::GetPtrClass.
     auto ptrCase = CRASH_UNLESS(EvalSwitch(Class_FromIl2CppType, 1, 1, IL2CPP_TYPE_PTR));
     auto j2C_GPC = CRASH_UNLESS(ptrCase->findNthDirectBranchWithoutLink(1));
+    delete ptrCase;
     logger.debug("j2C_GPC: %s", j2C_GPC->toString().c_str());
     Class_GetPtrClass = (decltype(Class_GetPtrClass))CRASH_UNLESS(j2C_GPC->label);
     logger.debug("Class::GetPtrClass(Il2CppClass*) found? offset: %lX", ((uintptr_t)Class_GetPtrClass) - getRealOffset(0));
+    if (j2C_GPC != ptrCase) delete j2C_GPC;
     usleep(1000);  // 0.001s
 
     // Assembly::GetAllAssemblies
@@ -1023,6 +1038,7 @@ void il2cpp_functions::Init() {
     auto* j2A_GAA = CRASH_UNLESS(dga.findNthCall(1));    
     Assembly_GetAllAssemblies = (decltype(Assembly_GetAllAssemblies))CRASH_UNLESS(j2A_GAA->label);
     logger.debug("Assembly::GetAllAssemblies found? offset: %lX", ((uintptr_t)Assembly_GetAllAssemblies) - getRealOffset(0));
+    if (j2A_GAA != &dga) delete j2A_GAA;
     usleep(1000);  // 0.001s
 
 
@@ -1031,6 +1047,7 @@ void il2cpp_functions::Init() {
     Instruction sd((const int32_t*)HookTracker::GetOrig(shutdown));
     auto sdb = CRASH_UNLESS(sd.findNthDirectBranchWithoutLink(1));
     auto* Runtime_Shutdown = CRASH_UNLESS(sdb->label);
+    if (sdb != &sd) delete sdb;
 
     if (find_GC_free(Runtime_Shutdown)) {
         logger.debug("gc::GarbageCollector::FreeFixed found? offset: %lX", ((uintptr_t)GC_free) - getRealOffset(0));
@@ -1050,16 +1067,19 @@ void il2cpp_functions::Init() {
         logger.debug("GarbageCollector::AllocateFixed found? offset: %lX", ((uintptr_t)GarbageCollector_AllocateFixed) - getRealOffset(0));
         usleep(1000);  // 0.001s
     }
+    if (inst != &localDomainGet) delete inst;
 
     // il2cpp_defaults
     Instruction iu16((const int32_t*)HookTracker::GetOrig(init_utf16));
     auto j2R_I = CRASH_UNLESS(iu16.findNthCall(3));
     Instruction Runtime_Init(CRASH_UNLESS(j2R_I->label));
+    if (j2R_I != &iu16) delete j2R_I;
     // alternatively, could just get the 1st ADRP in Runtime::Init with dest reg x20 (or the 9th ADRP)
     // We DO need to skip at least one ret, though.
     auto ldr = CRASH_UNLESS(Runtime_Init.findNth(6, std::mem_fn(&Instruction::isLoad), 1));  // the load for the malloc that precedes our adrp
     il2cpp_functions::defaults = (decltype(il2cpp_functions::defaults))ExtractAddress(ldr->addr, 1, 1);
     logger.debug("il2cpp_defaults found? offset: %lX", ((uintptr_t)defaults) - getRealOffset(0));
+    if (ldr != &Runtime_Init) delete ldr;
     usleep(1000);  // 0.001s
 
     // FIELDS

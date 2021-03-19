@@ -321,7 +321,7 @@ Instruction::Instruction(const int32_t* inst) {
                             }
                         }
                     }
-                    logger.debug("op1 = 0, op0: %i, op2: %i (1xxx), op3: %i", op0, op2, op3);
+                    // logger.debug("op1 = 0, op0: %i, op2: %i (1xxx), op3: %i", op0, op2, op3);
                 } else {
                     // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/data-processing-register#addsub_ext
                     kind[parseLevel++] = "Add/subtract (extended register)";
@@ -516,12 +516,12 @@ Instruction::Instruction(const int32_t* inst) {
             } else {
                 kind[parseLevel++] = "ADR";
             }
-            logger.debug("imm initial: 0x%X (%i); immNumBits: %i", immI, immI, immINumBits);
+            // logger.debug("imm initial: 0x%X (%i); immNumBits: %i", immI, immI, immINumBits);
             // the documentation calls this imm, but it's not exposed in the instruction string
             auto privateImm = SignExtend<int64_t>(immI, immINumBits);
             result = pc + privateImm;
             label = (decltype(label)::value_type) result;
-            logger.debug("imm: 0x%lX; result: 0x%lX (offset 0x%lX)", privateImm, result, result - base);
+            // logger.debug("imm: 0x%lX; result: 0x%lX (offset 0x%lX)", privateImm, result, result - base);
         } else if (op0 == 0b1) {
             numSourceRegisters = 1;
             Rs0CanBeSP = true;
@@ -585,9 +585,9 @@ Instruction::Instruction(const int32_t* inst) {
             bool logical = (op0 == 0b10);
             auto masks = DecodeBitMasks(N, imms, immr, sf ? 64 : 32, logical);
             if (masks) {
-                logger.debug("N: %i, immr: 0x%X (%u), imms: 0x%X, wmask: 0x%lX, tmask: 0x%lX", N, immr, immr, imms, masks->first, masks->second);
+                // logger.debug("N: %i, immr: 0x%X (%u), imms: 0x%X, wmask: 0x%lX, tmask: 0x%lX", N, immr, immr, imms, masks->first, masks->second);
             } else {
-                logger.debug("N: %i, immr: 0x%X (%u), imms: 0x%X, invalid bitmasks", N, immr, immr, imms);
+                // logger.debug("N: %i, immr: 0x%X (%u), imms: 0x%X, invalid bitmasks", N, immr, immr, imms);
                 valid = false;
             }
 
@@ -707,7 +707,7 @@ Instruction::Instruction(const int32_t* inst) {
                         kind[parseLevel++] = sf ? "UBFX - 64-bit" : "UBFX - 32-bit";
                     }
                 }
-                logger.debug("sf == N == %i, opc: %i", sf, opc);
+                // logger.debug("sf == N == %i, opc: %i", sf, opc);
             }
         } else {  // op1 == 1x
             if (op0 == 0b10) {
@@ -746,7 +746,7 @@ Instruction::Instruction(const int32_t* inst) {
                 } else {
                     kind[parseLevel++] = "B.cond";
                     label = (decltype(label)::value_type)(pc + (SignExtend<int64_t>(imm19, 19) << 2));
-                    logger.debug("label: %lX", ((decltype(base))*label) - base);
+                    // logger.debug("label: %lX", ((decltype(base))*label) - base);
                     branchType = DIR;
                 }
             }
@@ -799,7 +799,7 @@ Instruction::Instruction(const int32_t* inst) {
                         logger.debug("TODO: RETAA/RETAB! opc = 0b10, op3: %i, op4: %i", op3, op4);
                     }
                 } else {
-                    logger.debug("opc: %i, op3: %i, op4: %i", opc, op3, op4);
+                    // logger.debug("opc: %i, op3: %i, op4: %i", opc, op3, op4);
                 }
             } else if (op1 == 0b01000000110010) {
                 if (op2 == 0b11111) {
@@ -818,7 +818,7 @@ Instruction::Instruction(const int32_t* inst) {
                     kind[parseLevel++] = unalloc;
                 }
             } else {
-                logger.debug("op0 = 0b110, op1: %lu", op1);
+                // logger.debug("op0 = 0b110, op1: %lu", op1);
             }
         } else if ((op0 & 0b11) == 0) {  // x00
             // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/branches-exception-generating-and-system-instructions#branch_imm
@@ -878,7 +878,7 @@ Instruction::Instruction(const int32_t* inst) {
                 kind[parseLevel++] = op ? "TBNZ" : "TBZ";
             }
         } else {
-            logger.debug("op0: %u, op1: %s, op2: %u", op0, std::bitset<14>(op1).to_string().c_str(), op2);
+            // logger.debug("op0: %u, op1: %s, op2: %u", op0, std::bitset<14>(op1).to_string().c_str(), op2);
         }
     } else if ((top0 & 0b101) == 0b100) {  // x1x0
         // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/loads-and-stores
@@ -901,14 +901,14 @@ Instruction::Instruction(const int32_t* inst) {
                 // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/loads-and-stores#ldst_pos
                 kind[parseLevel++] = "Load/store register (unsigned immediate)";
                 uint_fast16_t imm12 = bits(code, 21, 10);
-                logger.debug("size: %i; imm12: 0x%lX", size, imm12);
+                // logger.debug("size: %i; imm12: 0x%lX", size, imm12);
                 imm = ZeroExtend<int64_t>(imm12, 12) << size;
                 wback = false;
                 postindex = false;
                 hasImmOffset = true;
             } else if ((op3 & 0b100000) == 0) {  // 0xxxxx
                 uint_fast16_t imm9 = bits(code, 20, 12);
-                logger.debug("size: %i; imm9: 0x%lX", size, imm9);
+                // logger.debug("size: %i; imm9: 0x%lX", size, imm9);
                 imm = SignExtend<int64_t>(imm9, 9);
 
                 if (op4 == 0b11) {
@@ -924,7 +924,7 @@ Instruction::Instruction(const int32_t* inst) {
                     postindex = true;
                     hasImmOffset = true;
                 } else {
-                    logger.debug("op0 = xx11, op2 = 0x, op3 = 0xxxxx, op4: %i", op4);
+                    // logger.debug("op0 = xx11, op2 = 0x, op3 = 0xxxxx, op4: %i", op4);
                 }
             } else {
                 if (op4 == 0b10) {
@@ -1004,7 +1004,7 @@ Instruction::Instruction(const int32_t* inst) {
                         logger.debug("TODO: STR/LDR (register, SIMD&FP)");
                     }
                 } else {
-                    logger.debug("op0 = xx11, op2 = 0x, op3 = 1xxxxx, op4: %i", op4);
+                    // logger.debug("op0 = xx11, op2 = 0x, op3 = 1xxxxx, op4: %i", op4);
                 }
             }
 
@@ -1051,7 +1051,7 @@ Instruction::Instruction(const int32_t* inst) {
                         }
                     }
                 } else {
-                    logger.debug("V: %i (TODO: SIMD&FP STR/LDR)", V);
+                    // logger.debug("V: %i (TODO: SIMD&FP STR/LDR)", V);
                 }
             }
         } else if ((op0 & 0b11) == 0b10) {  // xx10
@@ -1070,7 +1070,7 @@ Instruction::Instruction(const int32_t* inst) {
             if (op2 == 0) {
                 // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/loads-and-stores#ldstnapair_offs
                 kind[parseLevel++] = "Load/store no-allocate pair (offset)";
-                logger.debug("opc: %i, V: %i, L: %i", opc, V, L);
+                // logger.debug("opc: %i, V: %i, L: %i", opc, V, L);
             } else {
                 if (op2 == 0b1) {
                     // https://developer.arm.com/docs/ddi0596/a/top-level-encodings-for-a64/loads-and-stores#ldstpair_post
@@ -1165,7 +1165,7 @@ Instruction::Instruction(const int32_t* inst) {
                 }
             }
         } else {
-            logger.debug("op0: %i, op2: %i, op3: %i, op4: %i", op0, op2, op3, op4);
+            // logger.debug("op0: %i, op2: %i, op3: %i, op4: %i", op0, op2, op3, op4);
         }
     } else {
         logger.error("Our top-level bit patterns have a gap!");
