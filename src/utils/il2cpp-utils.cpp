@@ -262,13 +262,16 @@ namespace il2cpp_utils {
             case StringType::Manual: {
                 il2cpp_functions::CheckS_GlobalMetadata();
                 // TODO: Perhaps manually call createManual instead
-                auto mallocSize = sizeof(Il2CppString) + sizeof(Il2CppChar) * inp.length();
-                // String never has any references anyways
+                auto mallocSize = sizeof(Il2CppString) + sizeof(Il2CppChar) * (inp.length() + 1);
+                // String never has any references anyways, malloc is safe here because the string gets copied over anyways.
                 auto* str = reinterpret_cast<Il2CppString*>(malloc(mallocSize));
-                reinterpret_cast<Il2CppObject*>(str)->klass = il2cpp_functions::defaults->string_class;
-                setcsstr(str, to_utf16(inp));
-                // Follows same logic as createManual
-                il2cpp_functions::gc_wbarrier_set_field(reinterpret_cast<Il2CppObject*>(str), reinterpret_cast<void**>(str), reinterpret_cast<Il2CppObject*>(str)->klass);
+                str->object.klass = il2cpp_functions::defaults->string_class;
+                str->object.monitor = nullptr;
+                str->length = inp.length();
+                for (int i = 0; i < inp.length(); i++) {
+                    str->chars[i] = inp[i];
+                }
+                str->chars[inp.length()] = '\0';
                 return str;
             }
             default:
