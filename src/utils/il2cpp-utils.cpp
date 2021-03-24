@@ -268,7 +268,7 @@ namespace il2cpp_utils {
                 str->object.klass = il2cpp_functions::defaults->string_class;
                 str->object.monitor = nullptr;
                 str->length = inp.length();
-                for (int i = 0; i < inp.length(); i++) {
+                for (size_t i = 0; i < inp.length(); i++) {
                     str->chars[i] = inp[i];
                 }
                 str->chars[inp.length()] = '\0';
