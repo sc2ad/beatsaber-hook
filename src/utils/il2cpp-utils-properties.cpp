@@ -6,6 +6,7 @@
 
 namespace il2cpp_utils {
     static std::unordered_map<std::pair<const Il2CppClass*, std::string>, const PropertyInfo*, hash_pair> classesNamesToPropertiesCache;
+    static std::mutex classPropertiesLock;
 
     const PropertyInfo* FindProperty(Il2CppClass* klass, std::string_view propName) {
         static auto logger = getLogger().WithContext("FindProperty");
@@ -14,17 +15,22 @@ namespace il2cpp_utils {
 
         // Check Cache
         auto key = std::pair<Il2CppClass*, std::string>(klass, propName);
+        classPropertiesLock.lock();
         auto itr = classesNamesToPropertiesCache.find(key);
         if (itr != classesNamesToPropertiesCache.end()) {
+            classPropertiesLock.unlock();
             return itr->second;
         }
+        classPropertiesLock.unlock();
         auto prop = il2cpp_functions::class_get_property_from_name(klass, propName.data());
         if (!prop) {
             logger.error("could not find property %s in class '%s'!", propName.data(), ClassStandardName(klass).c_str());
             LogProperties(logger, klass);
             if (klass->parent != klass) prop = FindProperty(klass->parent, propName);
         }
+        classPropertiesLock.lock();
         classesNamesToPropertiesCache.emplace(key, prop);
+        classPropertiesLock.unlock();
         return prop;
     }
 

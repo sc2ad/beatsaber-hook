@@ -132,6 +132,7 @@ uintptr_t baseAddr(const char *soname)  // credits to https://github.com/ikoz/An
         return (uintptr_t)NULL;
     if (imagehandle == NULL)
         return (uintptr_t)NULL;
+    dlclose(imagehandle);
 
     FILE *f = NULL;
     char line[200] = {0};

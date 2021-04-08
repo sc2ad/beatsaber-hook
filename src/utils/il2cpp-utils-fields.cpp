@@ -6,6 +6,7 @@
 
 namespace il2cpp_utils {
     static std::unordered_map<std::pair<const Il2CppClass*, std::string>, FieldInfo*, hash_pair> classesNamesToFieldsCache;
+    static std::mutex nameFieldLock;
 
     FieldInfo* FindField(Il2CppClass* klass, std::string_view fieldName) {
         static auto logger = getLogger().WithContext("FindField");
@@ -14,17 +15,22 @@ namespace il2cpp_utils {
 
         // Check Cache
         auto key = std::pair<Il2CppClass*, std::string>(klass, fieldName);
+        nameFieldLock.lock();
         auto itr = classesNamesToFieldsCache.find(key);
         if (itr != classesNamesToFieldsCache.end()) {
+            nameFieldLock.unlock();
             return itr->second;
         }
+        nameFieldLock.unlock();
         auto field = il2cpp_functions::class_get_field_from_name(klass, fieldName.data());
         if (!field) {
             logger.error("could not find field %s in class '%s'!", fieldName.data(), ClassStandardName(klass).c_str());
             LogFields(logger, klass);
             if (klass->parent != klass) field = FindField(klass->parent, fieldName);
         }
+        nameFieldLock.lock();
         classesNamesToFieldsCache.emplace(key, field);
+        nameFieldLock.unlock();
         return field;
     }
 

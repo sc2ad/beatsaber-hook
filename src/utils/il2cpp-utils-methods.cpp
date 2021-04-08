@@ -31,6 +31,8 @@ namespace il2cpp_utils {
     static std::unordered_map<std::pair<const Il2CppClass*, std::pair<std::string, decltype(MethodInfo::parameters_count)>>, const MethodInfo*, hash_pair_3> classesNamesToMethodsCache;
     typedef std::pair<std::string, std::vector<const Il2CppType*>> classesNamesTypesInnerPairType;
     static std::unordered_map<std::pair<const Il2CppClass*, classesNamesTypesInnerPairType>, const MethodInfo*, hash_pair_3> classesNamesTypesToMethodsCache;
+    std::mutex classNamesMethodsLock;
+    std::mutex classTypesMethodsLock;
 
     #if __has_feature(cxx_exceptions)
     const MethodInfo* MakeGenericMethod(const MethodInfo* info, std::vector<Il2CppClass*> types)
@@ -97,10 +99,13 @@ namespace il2cpp_utils {
         // Check Cache
         auto innerPair = std::pair<std::string, decltype(MethodInfo::parameters_count)>(methodName, argsCount);
         auto key = std::pair<const Il2CppClass*, decltype(innerPair)>(klass, innerPair);
+        classNamesMethodsLock.lock();
         auto itr = classesNamesToMethodsCache.find(key);
         if (itr != classesNamesToMethodsCache.end()) {
+            classNamesMethodsLock.unlock();
             return itr->second;
         }
+        classNamesMethodsLock.unlock();
         // Recurses through klass's parents
         auto methodInfo = il2cpp_functions::class_get_method_from_name(klass, methodName.data(), argsCount);
         if (!methodInfo) {
@@ -108,7 +113,9 @@ namespace il2cpp_utils {
             LogMethods(logger, const_cast<Il2CppClass*>(klass), true);
             RET_DEFAULT_UNLESS(logger, methodInfo);
         }
+        classNamesMethodsLock.lock();
         classesNamesToMethodsCache.emplace(key, methodInfo);
+        classNamesMethodsLock.unlock();
         return methodInfo;
     }
 
@@ -148,10 +155,13 @@ namespace il2cpp_utils {
         // Check Cache
         auto innerPair = classesNamesTypesInnerPairType(info.name, info.argTypes);
         auto key = std::pair<Il2CppClass*, classesNamesTypesInnerPairType>(klass, innerPair);
+        classTypesMethodsLock.lock();
         auto itr = classesNamesTypesToMethodsCache.find(key);
         if (itr != classesNamesTypesToMethodsCache.end()) {
+            classTypesMethodsLock.unlock();
             return itr->second;
         }
+        classTypesMethodsLock.unlock();
 
         void* myIter = nullptr;
         const MethodInfo* methodInfo = nullptr;  // basic match
@@ -212,7 +222,9 @@ namespace il2cpp_utils {
             LogMethods(logger, klass);
             RET_DEFAULT_UNLESS(logger, !methodInfo || multipleBasicMatches);
         }
+        classTypesMethodsLock.lock();
         classesNamesTypesToMethodsCache.emplace(key, methodInfo);
+        classTypesMethodsLock.unlock();
         return methodInfo;
     }
 

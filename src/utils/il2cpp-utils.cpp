@@ -75,11 +75,13 @@ namespace il2cpp_utils {
     }
 
     static std::unordered_map<Il2CppClass*, const char*> typeMap;
+    static std::mutex typeLock;
 
     // TODO: somehow append "out/ref " to the front if type->byref? Make a TypeStandardName?
     const char* TypeGetSimpleName(const Il2CppType* type) {
         il2cpp_functions::Init();
 
+        typeLock.lock();
         if (typeMap.empty()) {
             typeMap[il2cpp_functions::defaults->boolean_class] = "bool";
             typeMap[il2cpp_functions::defaults->byte_class] = "byte";
@@ -99,8 +101,10 @@ namespace il2cpp_utils {
         }
         auto p = typeMap.find(il2cpp_functions::class_from_il2cpp_type(type));
         if (p != typeMap.end()) {
+            typeLock.unlock();
             return p->second;
         } else {
+            typeLock.unlock();
             return il2cpp_functions::type_get_name(type);
         }
     }

@@ -11,6 +11,7 @@ namespace il2cpp_utils {
 
     // It doesn't matter what types these are, they just need to be used correctly within the methods
     static std::unordered_map<std::pair<std::string, std::string>, Il2CppClass*, hash_pair> namesToClassesCache;
+    static std::mutex nameHashLock;
 
     Il2CppClass* GetClassFromName(std::string_view name_space, std::string_view type_name) {
         il2cpp_functions::Init();
@@ -19,10 +20,13 @@ namespace il2cpp_utils {
         // TODO: avoid creating std::string at any point except new pair insertion via P0919
         // Check cache
         auto key = std::pair<std::string, std::string>(name_space, type_name);
+        nameHashLock.lock();
         auto itr = namesToClassesCache.find(key);
         if (itr != namesToClassesCache.end()) {
+            nameHashLock.unlock();
             return itr->second;
         }
+        nameHashLock.unlock();
         auto dom = RET_0_UNLESS(logger, il2cpp_functions::domain_get());
         size_t assemb_count;
         const Il2CppAssembly** allAssemb = il2cpp_functions::domain_get_assemblies(dom, &assemb_count);
@@ -36,7 +40,9 @@ namespace il2cpp_utils {
             }
             auto klass = il2cpp_functions::class_from_name(img, name_space.data(), type_name.data());
             if (klass) {
+                nameHashLock.lock();
                 namesToClassesCache.emplace(key, klass);
+                nameHashLock.unlock();
                 return klass;
             }
         }
