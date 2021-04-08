@@ -61,6 +61,28 @@ struct SafePtr {
         il2cpp_functions::GC_free(internalHandle);
     }
 
+    /// @brief Emplace a new value into this SafePtr, freeing an existing one, if it exists.
+    /// @param other The instance to emplace.
+    void emplace(T& other) {
+        this->~SafePtr();
+        internalHandle = SafePointerWrapper::New(std::addressof(other));
+    }
+
+    /// @brief Emplace a new value into this SafePtr, freeing an existing one, if it exists.
+    /// @param other The instance to emplace.
+    void emplace(T* other) {
+        this->~SafePtr();
+        internalHandle = SafePointerWrapper::New(other);
+    }
+
+    inline SafePtr<T>& operator=(T* other) noexcept {
+        emplace(other);
+    }
+
+    inline SafePtr<T>& operator=(T& other) noexcept {
+        emplace(other);
+    }
+
     /// @brief Returns true if this instance's internal handle holds a pointer of ANY value (including nullptr)
     /// false otherwise.
     operator bool() const {
