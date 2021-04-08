@@ -59,6 +59,13 @@ namespace il2cpp_utils {
     /// @remarks See ClearDelegates() and ClearDelegate(Delegate* delegate)
     void AddAllocatedDelegate(void* delegate);
 
+
+    struct __InternalCSStr {
+        Il2CppObject object;
+        int32_t length;
+        Il2CppChar chars[IL2CPP_ZERO_LEN_ARRAY];
+    };
+
     /// @brief Create a new csstr from a UTF16 string view.
     /// @tparam creationType The creation type for the string.
     /// @param inp The input string to create.
@@ -67,17 +74,18 @@ namespace il2cpp_utils {
     Il2CppString* newcsstr(std::u16string_view inp) {
         il2cpp_functions::Init();
         if constexpr (creationType == CreationType::Manual) {
-            auto mallocSize = sizeof(Il2CppString) + sizeof(Il2CppChar) * (inp.length() + 1);
+            auto len = inp.length();
+            auto mallocSize = sizeof(Il2CppString) + sizeof(Il2CppChar) * (len + 1);
             // String never has any references anyways, malloc is safe here because the string gets copied over anyways.
-            auto* str = reinterpret_cast<Il2CppString*>(malloc(mallocSize));
+            auto* str = reinterpret_cast<__InternalCSStr*>(malloc(mallocSize));
             str->object.klass = il2cpp_functions::defaults->string_class;
             str->object.monitor = nullptr;
-            str->length = inp.length();
-            for (size_t i = 0; i < inp.length(); i++) {
+            str->length = len;
+            for (size_t i = 0; i < len; i++) {
                 str->chars[i] = inp[i];
             }
-            str->chars[inp.length()] = '\0';
-            return str;
+            str->chars[len] = '\0';
+            return reinterpret_cast<Il2CppString*>(str);
         } else {
             return il2cpp_functions::string_new_utf16(reinterpret_cast<const Il2CppChar*>(inp.data()), inp.length());
         }
@@ -95,7 +103,7 @@ namespace il2cpp_utils {
             auto len = inp.length();
             auto mallocSize = sizeof(Il2CppString) + sizeof(Il2CppChar) * (len + 1);
             // String never has any references anyways, malloc is safe here because the string gets copied over anyways.
-            auto* str = reinterpret_cast<Il2CppString*>(malloc(mallocSize));
+            auto* str = reinterpret_cast<__InternalCSStr*>(malloc(mallocSize));
             str->object.klass = il2cpp_functions::defaults->string_class;
             str->object.monitor = nullptr;
             str->length = len;
@@ -103,13 +111,13 @@ namespace il2cpp_utils {
                 str->chars[i] = inp[i];
             }
             str->chars[len] = '\0';
-            return str;
+            return reinterpret_cast<Il2CppString*>(str);
         } else {
             static auto logger = getLogger().WithContext("newcsstr");
             static auto enc = RET_0_UNLESS(logger, GetPropertyValue("System.Text", "Encoding", "ASCII"));
             // Create new string, created from the literal char*, not to be confused with a copy of this data
             auto* obj = RET_0_UNLESS(logger, RunMethod<Il2CppString*>("System", "String", "CreateStringFromEncoding", (uint8_t*)inp.data(), (int)inp.length(), enc));
-            return obj;
+            return reinterpret_cast<Il2CppString*>(obj);
         }
     }
 

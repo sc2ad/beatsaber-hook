@@ -264,26 +264,10 @@ namespace il2cpp_utils {
         il2cpp_functions::Init();
         switch (type) {
             case StringType::Manual: {
-                il2cpp_functions::CheckS_GlobalMetadata();
-                // TODO: Perhaps manually call createManual instead
-                auto mallocSize = sizeof(Il2CppString) + sizeof(Il2CppChar) * (inp.length() + 1);
-                // String never has any references anyways, malloc is safe here because the string gets copied over anyways.
-                auto* str = reinterpret_cast<Il2CppString*>(malloc(mallocSize));
-                str->object.klass = il2cpp_functions::defaults->string_class;
-                str->object.monitor = nullptr;
-                str->length = inp.length();
-                for (size_t i = 0; i < inp.length(); i++) {
-                    str->chars[i] = inp[i];
-                }
-                str->chars[inp.length()] = '\0';
-                return str;
+                return newcsstr<CreationType::Manual>(inp);
             }
             default:
-                // Get ASCII Encoding
-                static auto enc = RET_0_UNLESS(logger, GetPropertyValue("System.Text", "Encoding", "ASCII"));
-                // Create new string, created from the literal char*, not to be confused with a copy of this data
-                auto* obj = RET_0_UNLESS(logger, RunMethod<Il2CppString*>("System", "String", "CreateStringFromEncoding", (uint8_t*)inp.data(), (int)inp.length(), enc));
-                return obj;
+                return newcsstr<CreationType::Temporary>(inp);
         }
     }
 
