@@ -135,14 +135,7 @@ struct CountPointer {
         SAFE_ABORT();
         return *ptr;
     }
-    T* operator->() noexcept {
-        if (ptr) {
-            return ptr;
-        }
-        SAFE_ABORT();
-        return nullptr;
-    }
-    const T* operator->() const noexcept {
+    T* const operator->() const noexcept {
         if (ptr) {
             return ptr;
         }
@@ -155,11 +148,7 @@ struct CountPointer {
 
     /// @brief Get the raw pointer. Should ALMOST NEVER BE USED, UNLESS SCOPE GUARANTEES IT DIES BEFORE THIS INSTANCE DOES!
     /// @return The raw pointer saved by this instance.
-    constexpr T* __internal_get() noexcept {
-        return ptr;
-    }
-    /// @brief Same as __internal_get() but const.
-    constexpr const T* __internal_get() const noexcept {
+    constexpr T* const __internal_get() const noexcept {
         return ptr;
     }
     private:
@@ -184,7 +173,9 @@ struct SafePtr {
     SafePtr(T& wrappableInstance) : internalHandle(SafePointerWrapper::New(std::addressof(wrappableInstance))) {}
     /// @brief Move constructor is default, moves the internal handle and keeps reference count the same.
     SafePtr(SafePtr&& other) = default;
-    /// @brief Copy constructor is essentially default. Copies the internal handle and increases reference count.
+    /// @brief Copy constructor copies the HANDLE, that is, the held pointer remains the same.
+    /// Note that this means if you modify one SafePtr's held instance, all others that point to the same location will also reflect this change.
+    /// In order to avoid a (small) performance overhead, consider using a reference type instead of a value type, or the move constructor instead.
     SafePtr(const SafePtr& other) : internalHandle(other.internalHandle) {}
     /// @brief Destructor. Destroys the internal wrapper type, if necessary.
     /// Aborts if a wrapper type exists and must be freed, yet GC_free does not exist.
@@ -258,15 +249,18 @@ struct SafePtr {
         __SAFE_PTR_NULL_HANDLE_CHECK(internalHandle, *internalHandle->instancePointer);
     }
 
-    T* operator ->() {
-        __SAFE_PTR_NULL_HANDLE_CHECK(internalHandle, internalHandle->instancePointer);
-    }
-
     const T& operator *() const {
         __SAFE_PTR_NULL_HANDLE_CHECK(internalHandle, *internalHandle->instancePointer);
     }
 
-    const T* operator ->() const {
+    T* const operator ->() const {
+        __SAFE_PTR_NULL_HANDLE_CHECK(internalHandle, internalHandle->instancePointer);
+    }
+
+    /// @brief Explicitly cast this instance to a T*.
+    /// Note, however, that the lifetime of this returned T* is not longer than the lifetime of this instance.
+    /// Consider passing a SafePtr reference or copy instead.
+    explicit operator T* const() const {
         __SAFE_PTR_NULL_HANDLE_CHECK(internalHandle, internalHandle->instancePointer);
     }
 
