@@ -115,7 +115,7 @@ namespace il2cpp_utils {
     const Il2CppType* ExtractIndependentType() {
         static auto& logger = getLogger();
         if constexpr (std::is_reference_v<T>) {
-            auto* klass = RET_0_UNLESS(logger, NoArgClass<std::remove_reference<T>>());
+            auto* klass = RET_0_UNLESS(logger, NoArgClass<std::remove_reference_t<T>>());
             return &klass->this_arg;
         } else {
             auto* klass = RET_0_UNLESS(logger, NoArgClass<T>());
