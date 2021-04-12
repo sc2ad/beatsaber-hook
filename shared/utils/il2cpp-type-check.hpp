@@ -288,6 +288,15 @@ namespace il2cpp_utils {
         };
 
         template<typename T>
+        struct il2cpp_arg_type<T*> {
+            static inline const Il2CppType* get(T* arg) {
+                // A pointer could be passed in explicitly. In such a case, get the class of the pointer and return it non-byref.
+                Il2CppClass* klass = il2cpp_arg_class<T*>::get(arg);
+                return &klass->byval_arg;
+            }
+        };
+
+        template<typename T>
         struct il2cpp_arg_type<const T&> {
             static inline const Il2CppType* get(const T& arg) {
                 // A method cannot store a result back to a const ref. It is not a C# ref.
