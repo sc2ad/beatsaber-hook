@@ -16,17 +16,6 @@ jobs:
       with:
         submodules: true
         lfs: true
-    - name: Install Powershell
-      run: sudo apt-get install -y powershell
-    
-    - name: Setup NDK
-      id: setup-ndk
-      uses: nttld/setup-ndk@v1.0.3
-      with:
-        ndk-version: r22
-      
-    - name: Create ndkpath.txt
-      run: echo ${{ steps.setup-ndk.outputs.ndk-path }} > ${GITHUB_WORKSPACE}/ndkpath.txt
 
     - name: Get QPM
       if: steps.cache-qpm.outputs.cache-hit != 'true'
