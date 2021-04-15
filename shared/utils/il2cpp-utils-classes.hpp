@@ -147,6 +147,25 @@ namespace il2cpp_utils {
     // Adds the given nested types of typeDefinition to the class hash table of a given image
     // Mainly used in AddTypeToNametoClassHashTable
     void AddNestedTypesToNametoClassHashTable(const Il2CppImage* img, const Il2CppTypeDefinition* typeDefinition);
+    
+    
+    ///
+    /// @tparam ParentT The parent class (left hand assignment)
+    /// @param subOrInstanceKlass the instance class (right hand assignment)
+    /// @brief This method allows you to check if the parameter is a child or instance of the parent class. E.g (B extends A)
+    /// ```
+    /// A a;
+    /// if (a is B b) {
+    ///
+    /// }
+    /// ```
+    /// @return Returns true if subOrInstanceKlass is a child or instance of ParentT. For more information, check https://docs.microsoft.com/en-us/dotnet/api/system.type.isassignablefrom?view=net-5.0
+    template<typename ParentT>
+    bool AssignableFrom(Il2CppClass* subOrInstanceKlass) {
+      il2cpp_functions::Init();
+      RET_DEFAULT_UNLESS(getLogger(), subOrInstanceKlass);
+      return il2cpp_functions::class_is_assignable_from(classof(ParentT), subOrInstanceKlass);
+    }
 }
 
 #pragma pack(pop)
