@@ -196,12 +196,17 @@ struct Array : public Il2CppArray
     }
     /// @brief Copies the array to the provided vector reference of same type.
     /// @param vec The vector to copy to.
-    void copy_to(std::vector<T>& vec) {
+    void copy_to(std::vector<T>& vec) const {
         vec.assign(values, values + Length());
     }
     /// @brief Provides a reference span of the held data within this array. The span should NOT outlive this instance.
     /// @return The created span.
     std::span<T> ref_to() {
+        return std::span(values, Length());
+    }
+    /// @brief Provides a reference span of the held data within this array. The span should NOT outlive this instance.
+    /// @return The created span.
+    const std::span<T> ref_to() const {
         return std::span(values, Length());
     }
 };
