@@ -6,6 +6,8 @@
 #include "il2cpp-type-check.hpp"
 #include "il2cpp-functions.hpp"
 #include "il2cpp-utils-methods.hpp"
+#include <optional>
+#include <vector>
 
 namespace il2cpp_utils {
     template<class TOut>
@@ -148,11 +150,9 @@ namespace il2cpp_utils {
     // Mainly used in AddTypeToNametoClassHashTable
     void AddNestedTypesToNametoClassHashTable(const Il2CppImage* img, const Il2CppTypeDefinition* typeDefinition);
     
-    
-    ///
+    /// @brief This method allows you to check if the parameter is a child or instance of the parent class. E.g (B extends A)
     /// @tparam ParentT The parent class (left hand assignment)
     /// @param subOrInstanceKlass the instance class (right hand assignment)
-    /// @brief This method allows you to check if the parameter is a child or instance of the parent class. E.g (B extends A)
     /// ```
     /// A a;
     /// if (a is B b) {
@@ -162,9 +162,60 @@ namespace il2cpp_utils {
     /// @return Returns true if subOrInstanceKlass is a child or instance of ParentT. For more information, check https://docs.microsoft.com/en-us/dotnet/api/system.type.isassignablefrom?view=net-5.0
     template<typename ParentT>
     bool AssignableFrom(Il2CppClass* subOrInstanceKlass) {
-      il2cpp_functions::Init();
-      RET_DEFAULT_UNLESS(getLogger(), subOrInstanceKlass);
-      return il2cpp_functions::class_is_assignable_from(classof(ParentT), subOrInstanceKlass);
+        il2cpp_functions::Init();
+        RET_DEFAULT_UNLESS(getLogger(), subOrInstanceKlass);
+        auto* parentK = RET_DEFAULT_UNLESS(getLogger(), classof(ParentT));
+        return il2cpp_functions::class_is_assignable_from(parentK, subOrInstanceKlass);
+    }
+
+    /// @brief Performs an il2cpp type checked cast from T to U.
+    /// This should only be done if both T and U are reference types
+    /// Currently assumes the `klass` field is the first pointer in T.
+    /// This function may crash. See try_cast for a version that does not.
+    /// @tparam T The type to cast from.
+    /// @tparam U The type to cast to.
+    /// @return A U* of the cast value.
+    template<class U, class T>
+    [[nodiscard]] U* cast(T* inst) {
+        // TODO: Assumes T* is (at least) an Il2CppClass**, this means it assumes klass as first field.
+        auto* k1 = CRASH_UNLESS(classof(U*));
+        auto* k2 = *reinterpret_cast<Il2CppClass**>(CRASH_UNLESS(inst));
+        CRASH_UNLESS(k2);
+        if (il2cpp_functions::class_is_assignable_from(k1, k2)) {
+            return reinterpret_cast<U*>(inst);
+        }
+        SAFE_ABORT();
+        return nullptr;
+    }
+    /// @brief Performs an il2cpp type checked cast from T to U, reference version. See `cast` for more documentation.
+    /// @tparam T The type to cast from.
+    /// @tparam U The type to cast to.
+    /// @return A U& of the cast value.
+    template<typename U, typename T>
+    [[nodiscard]] U& cast_ref(T& inst) {
+        return *cast(std::addressof(inst));
+    }
+    /// @brief Performs an il2cpp type checked cast from T to U.
+    /// This should only be done if both T and U are reference types
+    /// Currently assumes the `klass` field is the first pointer in T.
+    /// @tparam T The type to cast from.
+    /// @tparam U The type to cast to.
+    /// @return A U* of the cast value, if successful.
+    template<typename U, typename T>
+    [[nodiscard]] std::optional<U*> try_cast(T* inst) {
+        auto* k1 = classof(U*);
+        if (!k1 || !inst) {
+            return std::nullopt;
+        }
+        // TODO: Assumes T* is (at least) an Il2CppClass**, this means it assumes klass as first field.
+        auto* k2 = *reinterpret_cast<Il2CppClass**>(inst);
+        if (!k2) {
+            return std::nullopt;
+        }
+        if (il2cpp_functions::class_is_assignable_from(k1, k2)) {
+            return reinterpret_cast<U*>(inst);
+        }
+        return std::nullopt;
     }
 }
 
