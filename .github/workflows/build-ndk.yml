@@ -61,7 +61,7 @@ jobs:
         cache-name: cache-qpm-deps
       with:
         path: QPM_Temp
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('${GITHUB_WORKSPACE}/qpm.json') }}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('qpm.json') }}
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}-
           ${{ runner.os }}-build-
@@ -70,11 +70,10 @@ jobs:
     - name: QPM Restore
 #       if: steps.cache-qpm-deps.outputs.cache-hit != 'true'
       run: ./QPM/QPM restore
-    - name: test_post_restore
+    - name: List Post Restore
       run: |
         ls -la ${GITHUB_WORKSPACE}/extern/
         ls -la QPM_Temp
-        ls -la ~/local/shared/
     - name: Build
       run: |
         cd ${GITHUB_WORKSPACE}
