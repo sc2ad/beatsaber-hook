@@ -207,7 +207,7 @@ struct Array : public Il2CppArray
     /// @brief Provides a reference span of the held data within this array. The span should NOT outlive this instance.
     /// @return The created span.
     const std::span<T> ref_to() const {
-        return std::span(values, Length());
+        return std::span(const_cast<T*>(values), Length());
     }
 };
 
