@@ -56,7 +56,7 @@ jobs:
         
     - name: test
       run: |
-        ls -la ~/.local/share/QPM_Temp
+        ls -la ${GITHUB_WORKSPACE}/extern/
     - name: QPM Dependencies Cache
       id: cache-qpm-deps
       uses: actions/cache@v2
@@ -64,7 +64,7 @@ jobs:
         cache-name: cache-qpm-deps
       with:
         path: QPM_Temp
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('../qpm.json') }}
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('${GITHUB_WORKSPACE}/qpm.json') }}
         restore-keys: |
           ${{ runner.os }}-build-${{ env.cache-name }}-
           ${{ runner.os }}-build-
