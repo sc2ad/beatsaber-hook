@@ -53,10 +53,7 @@ jobs:
       run: |
         chmod +x ./QPM/QPM
         ./QPM/QPM collect
-        
-    - name: test
-      run: |
-        ls -la ${GITHUB_WORKSPACE}/extern/
+    
     - name: QPM Dependencies Cache
       id: cache-qpm-deps
       uses: actions/cache@v2
@@ -73,6 +70,11 @@ jobs:
     - name: QPM Restore
 #       if: steps.cache-qpm-deps.outputs.cache-hit != 'true'
       run: ./QPM/QPM restore
+    - name: test_post_restore
+      run: |
+        ls -la ${GITHUB_WORKSPACE}/extern/
+        ls -la QPM_Temp
+        ls -la ~/local/shared/
     - name: Build
       run: |
         cd ${GITHUB_WORKSPACE}
