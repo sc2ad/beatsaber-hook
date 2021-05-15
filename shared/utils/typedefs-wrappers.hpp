@@ -345,10 +345,11 @@ struct SafePtr {
         return std::nullopt;
     }
 
-    /// @brief Returns true if this instance's internal handle holds a pointer of ANY value (including nullptr)
-    /// false otherwise.
+    /// @brief Returns false if this is a defaultly constructed SafePtr, true otherwise.
+    /// Note that this means that it will return true if it holds a nullptr value explicitly!
+    /// This means that you should check yourself before calling anything using the held T*.
     operator bool() const noexcept {
-        return *internalHandle != nullptr;
+        return (bool)internalHandle;
     }
 
     /// @brief Dereferences the instance pointer to a reference type of the held instance.

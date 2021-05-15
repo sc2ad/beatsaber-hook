@@ -3,6 +3,14 @@
 #include <vector>
 #include <span>
 
+#if __has_include(<concepts>)
+#include <concepts>
+#elif __has_include(<experimental/concepts>)
+#include <experimental/concepts>
+#else
+#warning "Please have some form of concepts support!"
+#endif
+
 template<class T, class U>
 /// @brief If type T can be assigned to by type U&&
 /// @tparam T The left hand side of the assignment
