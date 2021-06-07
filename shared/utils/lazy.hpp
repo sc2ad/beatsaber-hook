@@ -20,18 +20,18 @@ class Once {
 
     /// @brief Gets the current value, if it is initialized.
     std::optional<T const&> get() const {
-        return this->value;
+        return value;
     }
     //// @brief Gets the current value, if it is initialized.
     std::optional<T&> get() {
-        return this->value;
+        return value;
     }
 
     /// @brief Gets the current value, or initializes it.
     /// @param initializer Function to use for initialization if required.
     T& get_or_initialize(std::function<T()> const& initializer) {
-        this->initialize(initializer);
-        return *this->value;
+        initialize(initializer);
+        return *value;
     }
 };
 
@@ -48,17 +48,27 @@ class Lazy {
     /// @param initializer_ Function to use for initialization on the first access.
     Lazy(F const& initializer_) : inner(), initializer(initializer_) {}
 
+    operator T() const {
+        return inner.get_or_initialize(initializer);
+    }
+    operator T const &() const {
+        return inner.get_or_initialize(initializer);
+    }
+    operator T&() {
+        return inner.get_or_initialize(initializer);
+    }
+
     T const* operator->() const {
-        return this->inner.get_or_initialize(initializer);
+        return inner.get_or_initialize(initializer);
     }
     T* operator->() {
-        return this->inner.get_or_initialize(initializer);
+        return inner.get_or_initialize(initializer);
     }
 
     T const& operator*() const {
-        return this->inner.get_or_initialize(initializer);
+        return inner.get_or_initialize(initializer);
     }
     T& operator*() {
-        return this->inner.get_or_initialize(initializer);
+        return inner.get_or_initialize(initializer);
     }
 };
