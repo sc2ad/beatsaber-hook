@@ -104,47 +104,53 @@ class Logger {
         }
         ~Logger() = delete;
         void log(Logging::Level lvl, std::string str);
-        template<typename... TArgs>
-        void log(Logging::Level lvl, std::string_view fmt, TArgs... args) {
+        __attribute__((format(printf, 3, 4))) void log(Logging::Level lvl, const char* fmt, ...) {
             if (options.silent) {
                 return;
             }
-            log(lvl, string_format(fmt, args...));
+            va_list lst;
+            va_start(lst, fmt);
+            log(lvl, string_vformat(fmt, lst));
         }
-        template<typename... TArgs>
-        void critical(std::string_view fmt, TArgs... args) {
+        __attribute__((format(printf, 2, 3))) void critical(const char* fmt, ...) {
             if (options.silent) {
                 return;
             }
-            log(Logging::CRITICAL, string_format(fmt, args...));
+            va_list lst;
+            va_start(lst, fmt);
+            log(Logging::CRITICAL, string_vformat(fmt, lst));
         }
-        template<typename... TArgs>
-        void error(std::string_view fmt, TArgs... args) {
+        __attribute__((format(printf, 2, 3))) void error(const char* fmt, ...) {
             if (options.silent) {
                 return;
             }
-            log(Logging::ERROR, string_format(fmt, args...));
+            va_list lst;
+            va_start(lst, fmt);
+            log(Logging::ERROR, string_vformat(fmt, lst));
         }
-        template<typename... TArgs>
-        void warning(std::string_view fmt, TArgs... args) {
+        __attribute__((format(printf, 2, 3))) void warning(const char* fmt, ...) {
             if (options.silent) {
                 return;
             }
-            log(Logging::WARNING, string_format(fmt, args...));
+            va_list lst;
+            va_start(lst, fmt);
+            log(Logging::WARNING, string_vformat(fmt, lst));
         }
-        template<typename... TArgs>
-        void info(std::string_view fmt, TArgs... args) {
+        __attribute__((format(printf, 2, 3))) void info(const char* fmt, ...) {
             if (options.silent) {
                 return;
             }
-            log(Logging::INFO, string_format(fmt, args...));
+            va_list lst;
+            va_start(lst, fmt);
+            log(Logging::INFO, string_vformat(fmt, lst));
         }
-        template<typename... TArgs>
-        void debug(std::string_view fmt, TArgs... args) {
+        __attribute__((format(printf, 2, 3))) void debug(const char* fmt, ...) {
             if (options.silent) {
                 return;
             }
-            log(Logging::DEBUG, string_format(fmt, args...));
+            va_list lst;
+            va_start(lst, fmt);
+            log(Logging::DEBUG, string_vformat(fmt, lst));
         }
         /// @brief Flushes the buffer for this logger instance.
         void flush();
@@ -323,40 +329,51 @@ class LoggerContextObject {
             logger.log(lvl, tag + str);
         }
     }
-    template<typename T, typename... TArgs>
-    void log(Logging::Level lvl, std::string_view fmt, T first, TArgs... args) const {
+
+    void log_v(Logging::Level lvl, std::string_view fmt, va_list lst) const {
+        logger.log(lvl, tag + string_vformat(fmt, lst));
+    }
+    
+    __attribute__((format(printf, 3, 4))) void log(Logging::Level lvl, const char* fmt, ...) const {
         if (enabled) {
-            logger.log(lvl, tag + fmt.data(), first, args...);
+            va_list lst;
+            va_start(lst, fmt);
+            log_v(lvl, fmt, lst);
         }
     }
-    template<typename... TArgs>
-    void critical(std::string_view fmt, TArgs... args) const {
+    __attribute__((format(printf, 2, 3))) void critical(const char* fmt, ...) const {
         if (enabled) {
-            logger.critical(tag + fmt.data(), args...);
+            va_list lst;
+            va_start(lst, fmt);
+            log_v(Logging::CRITICAL, fmt, lst);
         }
     }
-    template<typename... TArgs>
-    void error(std::string_view fmt, TArgs... args) const {
+    __attribute__((format(printf, 2, 3))) void error(const char* fmt, ...) const {
         if (enabled) {
-            logger.error(tag + fmt.data(), args...);
+            va_list lst;
+            va_start(lst, fmt);
+            log_v(Logging::ERROR, fmt, lst);
         }
     }
-    template<typename... TArgs>
-    void warning(std::string_view fmt, TArgs... args) const {
+    __attribute__((format(printf, 2, 3))) void warning(const char* fmt, ...) const {
         if (enabled) {
-            logger.warning(tag + fmt.data(), args...);
+            va_list lst;
+            va_start(lst, fmt);
+            log_v(Logging::WARNING, fmt, lst);
         }
     }
-    template<typename... TArgs>
-    void info(std::string_view fmt, TArgs... args) const {
+    __attribute__((format(printf, 2, 3))) void info(const char* fmt, ...) const {
         if (enabled) {
-            logger.info(tag + fmt.data(), args...);
+            va_list lst;
+            va_start(lst, fmt);
+            log_v(Logging::INFO, fmt, lst);
         }
     }
-    template<typename... TArgs>
-    void debug(std::string_view fmt, TArgs... args) const {
+    __attribute__((format(printf, 2, 3))) void debug(const char* fmt, ...) const {
         if (enabled) {
-            logger.debug(tag + fmt.data(), args...);
+            va_list lst;
+            va_start(lst, fmt);
+            log_v(Logging::DEBUG, fmt, lst);
         }
     }
     /// @brief Enter a new context. This call forwards to logger.WithContext(this, ctx).
