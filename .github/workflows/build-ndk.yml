@@ -49,25 +49,31 @@ jobs:
         path: QPM
         repo: sc2ad/QuestPackageManager
         
-#     - name: QPM Dependencies Cache
-#       id: cache-qpm-deps
-#       uses: actions/cache@v2
-#       env:
-#         cache-name: cache-qpm-deps
-#       with:
-#         path: ~/.config/QPM
-#         key: ${{ runner.os }}-${{ env.cache-name }}
-#         restore-keys: |
-#           ${{ runner.os }}-${{ env.cache-name }}
+    - name: QPM Collect
+      run: |
+        chmod +x ./QPM/QPM
+        ./QPM/QPM collect
+    
+    - name: QPM Dependencies Cache
+      id: cache-qpm-deps
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-qpm-deps
+      with:
+        path: QPM_Temp
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('qpm.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
       
     - name: QPM Restore
 #       if: steps.cache-qpm-deps.outputs.cache-hit != 'true'
+      run: ./QPM/QPM restore
+    - name: List Post Restore
       run: |
-        chmod +x ./QPM/QPM
-        ./QPM/QPM restore
-    - name: test
-      run: |
-        ls ./QPM/QPM_Temp
+        ls -la ${GITHUB_WORKSPACE}/extern/
+        ls -la QPM_Temp
     - name: Build
       run: |
         cd ${GITHUB_WORKSPACE}

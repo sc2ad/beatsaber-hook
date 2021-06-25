@@ -1,4 +1,55 @@
 #pragma once
+#include <optional>
+#include <vector>
+#include <span>
+
+#if __has_include(<concepts>)
+#include <concepts>
+#elif __has_include(<experimental/concepts>)
+#include <experimental/concepts>
+#else
+#warning "Please have some form of concepts support!"
+#endif
+
+template<class T, class U>
+/// @brief If type T can be assigned to by type U&&
+/// @tparam T The left hand side of the assignment
+/// @tparam U The right hand side of the assignment
+concept has_assignment = requires (T arg, U&& other) {
+    arg = other;
+};
+
+template<class T>
+requires (!std::is_reference_v<T>)
+/// @brief A std::wrapper_reference implementation that perfect forwards to contained assignment operators.
+struct WrapperRef {
+    /// @brief Explicitly create a wrapper reference from a reference who MUST LIVE LONGER THAN THIS INSTANCE!
+    explicit constexpr WrapperRef(T& instance) : ptr(std::addressof(instance)) {}
+    // Assignment for any U type that is valid to be assigned.
+    template<class U>
+    requires (has_assignment<T, U>)
+    WrapperRef& operator=(U&& other) {
+        *ptr = other;
+        return *this;
+    }
+    // Standard Assignment
+    WrapperRef& operator=(const WrapperRef& x) noexcept = default;
+    // Getter operation, implicit conversion
+    constexpr operator T& () const noexcept {
+        return *ptr;
+    }
+    // Getter operation, explicit conversion
+    constexpr T& get() const noexcept {
+        return *ptr;
+    }
+    // Invoke operation
+    template<class... ArgTypes>
+    constexpr std::invoke_result_t<T&, ArgTypes...> operator() (ArgTypes&&... args) const {
+        return std::invoke(get(), std::forward<ArgTypes>(args)...);
+    }
+    private:
+    T* ptr;
+};
 
 #pragma pack(push)
 
@@ -56,7 +107,7 @@ struct Array : public Il2CppArray
     static_assert(is_value_type_v<T>, "T must be a C# value type! (primitive, pointer or Struct)");
     ALIGN_TYPE(8) T values[IL2CPP_ZERO_LEN_ARRAY];
 
-    il2cpp_array_size_t Length() {
+    inline il2cpp_array_size_t Length() const {
         if (bounds) {
             return bounds->length;
         }
@@ -67,6 +118,39 @@ struct Array : public Il2CppArray
     }
     const T& operator[](size_t i) const {
         return values[i];
+    }
+
+    /// @brief Get a given index, performs bound checking and throws std::runtime_error on failure.
+    /// @param i The index to get.
+    /// @return The reference to the item.
+    T& get(size_t i) {
+        THROW_UNLESS(i < Length() && i >= 0);
+        return values[i];
+    }
+    /// @brief Get a given index, performs bound checking and throws std::runtime_error on failure.
+    /// @param i The index to get.
+    /// @return The const reference to the item.
+    const T& get(size_t i) const {
+        THROW_UNLESS(i < Length() && i >= 0);
+        return values[i];
+    }
+    /// @brief Tries to get a given index, performs bound checking and returns a std::nullopt on failure.
+    /// @param i The index to get.
+    /// @return The WrapperRef<T> to the item, mostly considered to be a T&.
+    std::optional<WrapperRef<T>> try_get(size_t i) {
+        if (i >= Length() || i < 0) {
+            return std::nullopt;
+        }
+        return WrapperRef(values[i]);
+    }
+    /// @brief Tries to get a given index, performs bound checking and returns a std::nullopt on failure.
+    /// @param i The index to get.
+    /// @return The WrapperRef<const T> to the item, mostly considered to be a const T&.
+    std::optional<WrapperRef<const T>> try_get(size_t i) const {
+        if (i >= Length() || i < 0) {
+            return std::nullopt;
+        }
+        return WrapperRef(values[i]);
     }
 
     static Array<T>* New(std::initializer_list<T> vals) {
@@ -117,6 +201,21 @@ struct Array : public Il2CppArray
     int IndexOf(T item) {
         static auto* method = CRASH_UNLESS(il2cpp_utils::FindMethodUnsafe(this, "System.Collections.Generic.IList`1.IndexOf", 1));
         return CRASH_UNLESS(il2cpp_utils::RunMethodUnsafe<int>(this, method, item));
+    }
+    /// @brief Copies the array to the provided vector reference of same type.
+    /// @param vec The vector to copy to.
+    void copy_to(std::vector<T>& vec) const {
+        vec.assign(values, values + Length());
+    }
+    /// @brief Provides a reference span of the held data within this array. The span should NOT outlive this instance.
+    /// @return The created span.
+    std::span<T> ref_to() {
+        return std::span(values, Length());
+    }
+    /// @brief Provides a reference span of the held data within this array. The span should NOT outlive this instance.
+    /// @return The created span.
+    const std::span<T> ref_to() const {
+        return std::span(const_cast<T*>(values), Length());
     }
 };
 

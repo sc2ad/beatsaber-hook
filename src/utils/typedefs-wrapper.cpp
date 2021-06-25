@@ -61,4 +61,34 @@ void test() {
     // This means that any reference from *SafePtr<T> or (T*)SafePtr<T> has a limited lifetime and SHOULD NOT BE USED!
     // Instead, consider using -> explicitly, or passing SafePtr<T> instances either by reference (strongly suggested) or by value/move.
 }
+
+#include "../../shared/utils/il2cpp-utils-classes.hpp"
+#include "il2cpp-object-internals.h"
+void test_cast() {
+    int x = 3;
+    {
+        SafePtr<int> a(&x);
+        // We should then be able to cast to a SafePtr<float>, but in this case this will fail because we don't handle value type casts
+        auto b = a.cast<float>();
+        auto c = *a.try_cast<float>();
+    }
+    // If we have reference types, however, we can do that instead.
+    {
+        Il2CppObject inst{};
+        SafePtr<Il2CppObject> a(&inst);
+        // We could then cast this to whatever we wish, including an Il2CppReflectionType
+        // (though the validity is obviously a failure with a null class)
+        auto b = a.cast<Il2CppReflectionType>();
+        auto c = *a.try_cast<Il2CppReflectionType>();
+
+        // Just to make sure:
+        auto* q = il2cpp_utils::cast<Il2CppReflectionType>(&inst);
+        auto* p = *il2cpp_utils::try_cast<Il2CppObject>(q);
+        assert(q == p && q == &inst);
+        if (p != &inst) {
+            // FAILSAFE TO AVOID UNUSUED p
+            SAFE_ABORT();
+        }
+    }
+}
 #endif

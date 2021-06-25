@@ -13,6 +13,9 @@ struct CreatedTooEarlyException : std::runtime_error {
 struct NullHandleException : std::runtime_error {
     NullHandleException() : std::runtime_error("A SafePtr<T> instance is holding a null handle!") {}
 };
+struct TypeCastException : std::runtime_error {
+    TypeCastException() : std::runtime_error("The type could not be cast safely! Check your SafePtr/CountPointer cast calls!") {}
+};
 #define __SAFE_PTR_NULL_HANDLE_CHECK(handle, ...) \
 if (handle) \
 return __VA_ARGS__; \
@@ -135,6 +138,13 @@ struct CountPointer {
         SAFE_ABORT();
         return *ptr;
     }
+    T* operator->() noexcept {
+        if (ptr) {
+            return ptr;
+        }
+        SAFE_ABORT();
+        return nullptr;
+    }
     T* const operator->() const noexcept {
         if (ptr) {
             return ptr;
@@ -144,6 +154,52 @@ struct CountPointer {
     }
     constexpr operator bool() const noexcept {
         return ptr != nullptr;
+    }
+    /// @brief Performs an il2cpp type checked cast from T to U.
+    /// This should only be done if both T and U are reference types
+    /// Currently assumes the `klass` field is the first pointer in T.
+    /// This function may throw TypeCastException or crash.
+    /// See try_cast for a version that does not.
+    /// @tparam U The type to cast to.
+    /// @return A new CountPointer of the cast value.
+    template<class U>
+    [[nodiscard]] inline CountPointer<U> cast() const {
+        // TODO: We currently assume that the first sizeof(void*) bytes of ptr is the klass field.
+        // This should hold true for everything except value types.
+        auto* k1 = CRASH_UNLESS(classof(U*));
+        auto* k2 = *CRASH_UNLESS(reinterpret_cast<Il2CppClass**>(ptr));
+        CRASH_UNLESS(k2);
+        il2cpp_functions::Init();
+        if (il2cpp_functions::class_is_assignable_from(k1, k2)) {
+            return CountPointer<U>(reinterpret_cast<U*>(ptr));
+        }
+        #if __has_feature(cxx_exceptions)
+        throw TypeCastException();
+        #else
+        SAFE_ABORT();
+        return CountPointer<U>();
+        #endif
+    }
+    /// @brief Performs an il2cpp type checked cast from T to U.
+    /// This should only be done if both T and U are reference types
+    /// Currently assumes the `klass` field is the first pointer in T.
+    /// @tparam U The type to cast to.
+    /// @return A new CountPointer of the cast value, if successful.
+    template<class U>
+    [[nodiscard]] inline std::optional<CountPointer<U>> try_cast() const noexcept {
+        auto* k1 = classof(U*);
+        if (!ptr || !k1) {
+            return std::nullopt;
+        }
+        auto* k2 = *reinterpret_cast<Il2CppClass**>(ptr);
+        if (!k2) {
+            return std::nullopt;
+        }
+        il2cpp_functions::Init();
+        if (il2cpp_functions::class_is_assignable_from(k1, k2)) {
+            return CountPointer<U>(reinterpret_cast<U*>(ptr));
+        }
+        return std::nullopt;
     }
 
     /// @brief Get the raw pointer. Should ALMOST NEVER BE USED, UNLESS SCOPE GUARANTEES IT DIES BEFORE THIS INSTANCE DOES!
@@ -155,7 +211,6 @@ struct CountPointer {
     T* ptr;
 };
 
-// TODO: Test to see if gc alloc works
 // TODO: Make an overall Ptr interface type, virtual destructor and *, -> operators
 // TODO: Remove all conversion operators? (Basically force people to guarantee lifetime of held instance?)
 
@@ -236,11 +291,65 @@ struct SafePtr {
         emplace(other);
         return *this;
     }
+    /// @brief Performs an il2cpp type checked cast from T to U.
+    /// This should only be done if both T and U are reference types
+    /// Currently assumes the `klass` field is the first pointer in T.
+    /// This function may throw TypeCastException or NullHandleException or otherwise abort.
+    /// See try_cast for a version that does not.
+    /// @tparam U The type to cast to.
+    /// @return A new SafePtr of the cast value.
+    template<class U>
+    [[nodiscard]] inline SafePtr<U> cast() const {
+        // TODO: We currently assume that the first sizeof(void*) bytes of ptr is the klass field.
+        // This should hold true for everything except value types.
+        if (!internalHandle) {
+            #if __has_feature(cxx_exceptions)
+            throw NullHandleException();
+            #else
+            SAFE_ABORT();
+            return SafePtr<U>();
+            #endif
+        }
+        auto* k1 = CRASH_UNLESS(classof(U*));
+        auto* k2 = *CRASH_UNLESS(reinterpret_cast<Il2CppClass**>(internalHandle->instancePointer));
+        il2cpp_functions::Init();
+        if (il2cpp_functions::class_is_assignable_from(k1, k2)) {
+            return SafePtr<U>(reinterpret_cast<U*>(internalHandle->instancePointer));
+        }
+        #if __has_feature(cxx_exceptions)
+        throw TypeCastException();
+        #else
+        SAFE_ABORT();
+        return SafePtr<U>();
+        #endif
+    }
+    /// @brief Performs an il2cpp type checked cast from T to U.
+    /// This should only be done if both T and U are reference types
+    /// Currently assumes the `klass` field is the first pointer in T.
+    /// @tparam U The type to cast to.
+    /// @return A new SafePtr of the cast value, if successful.
+    template<class U>
+    [[nodiscard]] inline std::optional<SafePtr<U>> try_cast() const noexcept {
+        auto* k1 = classof(U*);
+        if (!internalHandle || !internalHandle->instancePointer || k1) {
+            return std::nullopt;
+        }
+        auto* k2 = *reinterpret_cast<Il2CppClass**>(internalHandle->instancePointer);
+        if (!k2) {
+            return std::nullopt;
+        }
+        il2cpp_functions::Init();
+        if (il2cpp_functions::class_is_assignable_from(k1, k2)) {
+            return SafePtr<U>(reinterpret_cast<U*>(internalHandle->instancePointer));
+        }
+        return std::nullopt;
+    }
 
-    /// @brief Returns true if this instance's internal handle holds a pointer of ANY value (including nullptr)
-    /// false otherwise.
+    /// @brief Returns false if this is a defaultly constructed SafePtr, true otherwise.
+    /// Note that this means that it will return true if it holds a nullptr value explicitly!
+    /// This means that you should check yourself before calling anything using the held T*.
     operator bool() const noexcept {
-        return *internalHandle != nullptr;
+        return (bool)internalHandle;
     }
 
     /// @brief Dereferences the instance pointer to a reference type of the held instance.
@@ -272,7 +381,7 @@ struct SafePtr {
                 #if __has_feature(cxx_exceptions)
                 throw CreatedTooEarlyException();
                 #else
-                CRASH_UNLESS(false);
+                SAFE_ABORT();
                 #endif
             }
             // It should be safe to assume that GC_AllocateFixed returns a non-null pointer. If it does return null, we have a pretty big issue.
