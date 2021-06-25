@@ -407,10 +407,16 @@ struct WeakPtr {
 
 };
 
+template<template<typename Item> typename Container, typename Item>
+concept is_valid_container = requires (Container<Item> coll, Item item) {
+    coll.erase(item);
+    coll.emplace(item);
+    coll.clear();
+};
+
 // TODO: Make a version of this for C# delegates?
-// TODO: Add requirements for container
-template<template<typename> typename Container, typename ...TArgs>
-//requires (std::is_base_of_v<Container<std::function<void(TArgs...)>>, std::container>)
+template<template<typename TARgs> typename Container, typename ...TArgs>
+requires (is_valid_container<Container, std::function<void(TArgs...)>>)
 class BasicEventCallback {
 private:
     using functionType = std::function<void(TArgs...)>;
@@ -423,7 +429,7 @@ public:
     }
 
     BasicEventCallback& operator +=(const functionType& callback) {
-        callbacks.push_back(callback);
+        callbacks.emplace(callback);
     }
 
     BasicEventCallback& operator -=(const functionType& callback) {
