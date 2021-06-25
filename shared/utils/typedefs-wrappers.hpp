@@ -441,10 +441,6 @@ public:
     void clear() {
         callbacks.clear();
     }
-
-    void shrink() const {
-        callbacks.shrink_to_fit();
-    }
 };
 
 template<typename Item>
