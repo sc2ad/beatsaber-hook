@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <utility>
 #include <functional>
-#include <vector>
+#include <unordered_set>
 
 #if __has_feature(cxx_exceptions)
 struct CreatedTooEarlyException : std::runtime_error {
