@@ -5,6 +5,8 @@
 #include <shared_mutex>
 #include <unordered_map>
 #include <utility>
+#include <functional>
+#include <vector>
 
 #if __has_feature(cxx_exceptions)
 struct CreatedTooEarlyException : std::runtime_error {
@@ -404,3 +406,50 @@ template<class T>
 struct WeakPtr {
 
 };
+
+// TODO: Make a version of this for C# delegates?
+// TODO: Add requirements for container
+template<template<typename> typename Container, typename ...TArgs>
+//requires (std::is_base_of_v<Container<std::function<void(TArgs...)>>, std::container>)
+class BasicEventCallback {
+private:
+    using functionType = std::function<void(TArgs...)>;
+    Container<functionType> callbacks;
+public:
+    void invoke(TArgs... args) const {
+        for (auto& callback : callbacks) {
+            callback(args...);
+        }
+    }
+
+    BasicEventCallback& operator +=(const functionType& callback) {
+        callbacks.push_back(callback);
+    }
+
+    BasicEventCallback& operator -=(const functionType& callback) {
+        callbacks.erase(callback);
+    }
+
+    void addCallback(const functionType& callback) {
+        callbacks.emplace(callback);
+    }
+
+    void removeCallback(const functionType& callback) {
+        callbacks.erase(callback);
+    }
+
+    void clear() {
+        callbacks.clear();
+    }
+
+    void shrink() const {
+        callbacks.shrink_to_fit();
+    }
+};
+
+template<typename Item>
+using default_unordered_set = std::unordered_set<Item>;
+
+// Good default for most
+template<typename ...TArgs>
+using EventCallback = BasicEventCallback<default_unordered_set, TArgs...>;
