@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <utility>
 #include <functional>
+#include <set>
 #include <unordered_set>
 
 #if __has_feature(cxx_exceptions)
@@ -414,12 +415,33 @@ concept is_valid_container = requires (Container<Item> coll, Item item) {
     coll.clear();
 };
 
+template<class T>
+struct EquatableFunction : public std::function<T> {
+    template<class F>
+    EquatableFunction(F&& f) : std::function<T>(f) {}
+};
+
+namespace std {
+    template<typename... TArgs>
+    struct hash<EquatableFunction<void(TArgs...)>> {
+        std::size_t operator()(const EquatableFunction<void(TArgs...)>& obj) const noexcept {
+            auto hz = std::hash<void (*)(TArgs...)>{}(*const_cast<void (**)(TArgs...)>(obj.template target<void (*)(TArgs...)>()));
+            return hz;
+        }
+    };
+}
+
+template<typename... TArgs>
+bool operator==(const EquatableFunction<void (TArgs...)>& a, const EquatableFunction<void (TArgs...)>& b) {
+    return *a.template target<void (*)(TArgs...)>() == *b.template target<void (*)(TArgs...)>();
+}
+
 // TODO: Make a version of this for C# delegates?
-template<template<typename TARgs> typename Container, typename ...TArgs>
-requires (is_valid_container<Container, std::function<void(TArgs...)>>)
+template<template<typename> typename Container, typename ...TArgs>
+requires (is_valid_container<Container, EquatableFunction<void(TArgs...)>>)
 class BasicEventCallback {
 private:
-    using functionType = std::function<void(TArgs...)>;
+    using functionType = EquatableFunction<void(TArgs...)>;
     Container<functionType> callbacks;
 public:
     void invoke(TArgs... args) const {
@@ -450,8 +472,15 @@ public:
 };
 
 template<typename Item>
+using default_ordered_set = std::set<Item>;
+
+template<typename Item>
 using default_unordered_set = std::unordered_set<Item>;
 
 // Good default for most
 template<typename ...TArgs>
-using EventCallback = BasicEventCallback<default_unordered_set, TArgs...>;
+using EventCallback = BasicEventCallback<default_ordered_set, TArgs...>;
+
+
+template<typename ...TArgs>
+using UnorderedEventCallback = BasicEventCallback<default_unordered_set, TArgs...>;
