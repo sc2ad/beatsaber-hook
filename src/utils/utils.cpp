@@ -111,9 +111,15 @@ uintptr_t getLibil2cppSize() {
         if (!stat(Modloader::getLibIl2CppPath().c_str(), &st)) {
             soSize = st.st_size;
         }
-        contextLogger.debug("libil2cpp.so size: 0x%x", soSize);
+        contextLogger.debug("libil2cpp.so size: 0x%lx", soSize);
     }
     return soSize;
+}
+
+std::string string_format(const char* format, ...) {
+    va_list lst;
+    va_start(lst, format);
+    return string_vformat(format, lst);
 }
 
 void analyzeBytes(const void* ptr) {

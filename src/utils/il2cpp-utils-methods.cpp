@@ -55,7 +55,7 @@ namespace il2cpp_utils {
         // Populate generic parameters into array
         auto* arr = reinterpret_cast<Array<Il2CppReflectionType*>*>(il2cpp_functions::array_new(typeClass, types.size()));
         if (!arr) {
-            logger.error("Failed to create array of length: %u", types.size());
+            logger.error("Failed to create array of length: %lu", types.size());
             THROW_OR_RET_NULL(logger, arr);
         }
         int i = 0;

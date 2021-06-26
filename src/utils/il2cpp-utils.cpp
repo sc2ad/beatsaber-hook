@@ -43,7 +43,7 @@ namespace il2cpp_utils {
         }
         auto genCount = (method->is_generic && !method->is_inflated) ? method->genericContainer->type_argc : 0;
         if ((size_t)genCount != genTypes.size()) {
-            logger.warning("Potential method match had wrong number of generics %i (expected %i)",
+            logger.warning("Potential method match had wrong number of generics %i (expected %lu)",
                 genCount, genTypes.size());
             return false;
         }

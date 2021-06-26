@@ -38,12 +38,7 @@ bool fileexists(std::string_view filename);
 bool direxists(std::string_view dirname);
 // Yoinked from: https://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
 // TODO: This should be removed once std::format exists
-__attribute__((format(printf, 1, 2))) std::string string_format(const char* format, ...)
-{
-    va_list lst;
-    va_start(lst, format);
-    return string_vformat(format, lst);
-}
+__attribute__((format(printf, 1, 2))) std::string string_format(const char* format, ...);
 
 /// @brief Get the size of the libil2cpp.so file
 /// @returns The size of the .so

@@ -39,5 +39,5 @@ LOCAL_SHARED_LIBRARIES += modloader
 LOCAL_LDLIBS += -llog
 LOCAL_CFLAGS += -DVERSION='"1.0.0"' -isystem 'extern/libil2cpp/il2cpp/libil2cpp' -D'UNITY_2019' -Wall -Wextra -Werror -Wno-unused-function -DID='"beatsaber-hook"' -I'./shared' -isystem 'extern'
 LOCAL_C_INCLUDES += ./shared
-LOCAL_CPP_FEATURES += exceptions
+LOCAL_CPP_FEATURES += exceptions rtti
 include $(BUILD_SHARED_LIBRARY)
