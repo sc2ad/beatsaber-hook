@@ -488,11 +488,12 @@ struct FunctionWrapper<std::function<R (TArgs...)>> : AbstractFunction<R (void*,
         return nullptr;
     }
     [[nodiscard]] void* ptr() const override {
-        return const_cast<void*>(reinterpret_cast<const void*>(&held));
+        return handle;
     }
-    std::function<R(TArgs...)> const& held;
+    std::function<R (TArgs...)> const held;
+    void* handle;
 
-    FunctionWrapper(std::function<R (TArgs...)> const& f) : held(f) {}
+    FunctionWrapper(std::function<R (TArgs...)> const& f) : held(f), handle(const_cast<void*>(reinterpret_cast<const void*>(&f))) {}
     R operator()(TArgs... args) const noexcept override {
             if constexpr (std::is_same_v<R, void>) {
                 held(args...);
@@ -535,8 +536,7 @@ public:
     template<class F, typename Q>
     ThinVirtualLayer(F&& f, Q* inst) : func(new FunctionWrapper<R (Q::*)(TArgs...)>(f, inst)) {}
     template<class F>
-    ThinVirtualLayer(F&& f) : func(new FunctionWrapper<std::function<R(TArgs...)>>(f)) {}
-
+    ThinVirtualLayer(F&& f) : func(new FunctionWrapper<std::function<R (TArgs...)>>(f)) {}
 
     R operator()(TArgs... args) const noexcept {
         (*func)(args...);
