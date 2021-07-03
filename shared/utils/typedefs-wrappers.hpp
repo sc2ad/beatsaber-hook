@@ -413,12 +413,12 @@ struct WeakPtr {
 
 template<template<typename> typename Container, typename Item>
 concept is_valid_container = requires (Container<Item> coll, Item item) {
-coll.erase(item);
-coll.emplace(item);
-coll.clear();
-coll.begin();
-coll.end();
-coll.size();
+    coll.erase(item);
+    coll.emplace(item);
+    coll.clear();
+    coll.begin();
+    coll.end();
+    coll.size();
 };
 
 template<class T>
@@ -430,6 +430,7 @@ struct AbstractFunction<R (T*, TArgs...)> {
     virtual void* ptr() const = 0;
 
     virtual R operator()(TArgs... args) const noexcept = 0;
+    virtual ~AbstractFunction() = default;
 };
 
 template<class T>
@@ -447,11 +448,11 @@ struct FunctionWrapper<R (*)(TArgs...)> : AbstractFunction<R (void*, TArgs...)> 
     template<class F>
     FunctionWrapper(F&& f) : held(f) {}
     R operator()(TArgs... args) const noexcept override {
-            if constexpr (std::is_same_v<R, void>) {
-                held(args...);
-            } else {
-                return held(args...);
-            }
+        if constexpr (std::is_same_v<R, void>) {
+            held(args...);
+        } else {
+            return held(args...);
+        }
     }
 };
 
@@ -474,11 +475,11 @@ struct FunctionWrapper<R (T::*)(TArgs...)> : AbstractFunction<R (void*, TArgs...
     template<class F>
     FunctionWrapper(F&& f, T* inst) : held(f), _instance(inst) {}
     R operator()(TArgs... args) const noexcept override {
-            if constexpr (std::is_same_v<R, void>) {
-                (reinterpret_cast<T*>(_instance)->*held)(args...);
-            } else {
-                return (reinterpret_cast<T*>(_instance)->*held)(args...);
-            }
+        if constexpr (std::is_same_v<R, void>) {
+            (reinterpret_cast<T*>(_instance)->*held)(args...);
+        } else {
+            return (reinterpret_cast<T*>(_instance)->*held)(args...);
+        }
     }
 };
 
@@ -495,11 +496,11 @@ struct FunctionWrapper<std::function<R (TArgs...)>> : AbstractFunction<R (void*,
 
     FunctionWrapper(std::function<R (TArgs...)> const& f) : held(f), handle(const_cast<void*>(reinterpret_cast<const void*>(&f))) {}
     R operator()(TArgs... args) const noexcept override {
-            if constexpr (std::is_same_v<R, void>) {
-                held(args...);
-            } else {
-                return held(args...);
-            }
+        if constexpr (std::is_same_v<R, void>) {
+            held(args...);
+        } else {
+            return held(args...);
+        }
     }
 };
 
@@ -517,6 +518,11 @@ namespace std {
 template<typename R, typename T, typename... TArgs>
 bool operator==(const AbstractFunction<R (T*, TArgs...)>& a, const AbstractFunction<R (T*, TArgs...)>& b) {
     return a.instance() == b.instance() && a.ptr() == b.ptr();
+}
+
+template<typename R, typename T, typename... TArgs>
+bool operator<(const AbstractFunction<R (T*, TArgs...)>& a, const AbstractFunction<R (T*, TArgs...)>& b) {
+    return a.ptr() < b.ptr();
 }
 
 template<class T>
@@ -550,6 +556,9 @@ public:
 
     bool operator==(const ThinVirtualLayer<R (T*, TArgs...)> other) const {
         return *func == (*other.func);
+    }
+    bool operator<(const ThinVirtualLayer<R (T*, TArgs...)> other) const {
+        return *func < *other.func;
     }
 };
 

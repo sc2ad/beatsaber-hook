@@ -2,15 +2,15 @@
 #include "../../shared/utils/typedefs-wrappers.hpp"
 EventCallback<> asdf;
 
-void test() {
+static void test() {
     std::cout << "sklasjdfgkladgf" << std::endl;
 }
 
-void test2() {
+static void test2() {
     std::cout << "idk" << std::endl;
 }
 
-int main() {
+static void randomRunner() {
     asdf.addCallback(test);
     asdf.addCallback(test2);
     asdf.invoke();

@@ -1,15 +1,15 @@
 #ifdef TEST_SAFEPTR
 #include "../../shared/utils/typedefs-wrappers.hpp"
-void testRef(SafePtr<int>& ref) {
+static void testRef(SafePtr<int>& ref) {
     *ref = 55;
 }
-void testCopy(SafePtr<int> copy) {
+static void testCopy(SafePtr<int> copy) {
     *copy = 1234;
 }
-void testLiteral(int* value) {
+static void testLiteral(int* value) {
     *value = 5678;
 }
-void test() {
+static void test() {
     int x = 3;
     SafePtr<int> a;
     {
@@ -60,7 +60,7 @@ void test() {
 
 #include "../../shared/utils/il2cpp-utils-classes.hpp"
 #include "il2cpp-object-internals.h"
-void test_cast() {
+static void test_cast() {
     int x = 3;
     {
         SafePtr<int> a(&x);
