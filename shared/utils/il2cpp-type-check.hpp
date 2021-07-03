@@ -325,6 +325,11 @@ namespace il2cpp_utils {
                 return reinterpret_cast<void*>(arg);
             }
         };
+
+        /// @brief Represents a specialization type that should be used for exposing metadata from particular values.
+        /// @tparam val The value to specialize this particular metadata getter on.
+        template<auto val>
+        struct MetadataGetter;
     }
 }
 
