@@ -142,6 +142,34 @@ struct Hook_##name_ { \
 }; \
 retval Hook_##name_::hook_##name_(__VA_ARGS__)
 
+// Make a hook that finds a method that matches the signature provided and exists on the provided namespace and type name, with the provided method name.
+// THIS FUNCTION IS THE UNSAFE VARIANT, SUBTRACTS ONE FOR INSTANCE METHODS!
+#define MAKE_HOOK_FIND_CLASS_UNSAFE_INSTANCE(name_, namespaze, klassName, mName, retval, ...) \
+struct Hook_##name_ { \
+    constexpr static const char* name() { return #name_; } \
+    static const MethodInfo* getInfo() { return ::il2cpp_utils::MethodTypeCheck<funcType>::find_unsafe(namespaze, klassName, mName, true); } \
+    using funcType = retval (*)(__VA_ARGS__); \
+    static funcType* trampoline() { return &name_; } \
+    static inline retval (*name_)(__VA_ARGS__) = nullptr; \
+    static funcType hook() { return hook_##name_; } \
+    static retval hook_##name_(__VA_ARGS__); \
+}; \
+retval Hook_##name_::hook_##name_(__VA_ARGS__)
+
+// Make a hook that finds a method that matches the signature provided and exists on the provided namespace and type name, with the provided method name.
+// THIS FUNCTION IS THE UNSAFE VARIANT!
+#define MAKE_HOOK_FIND_CLASS_UNSAFE_STATIC(name_, namespaze, klassName, mName, retval, ...) \
+struct Hook_##name_ { \
+    constexpr static const char* name() { return #name_; } \
+    static const MethodInfo* getInfo() { return ::il2cpp_utils::MethodTypeCheck<funcType>::find_unsafe(namespaze, klassName, mName); } \
+    using funcType = retval (*)(__VA_ARGS__); \
+    static funcType* trampoline() { return &name_; } \
+    static inline retval (*name_)(__VA_ARGS__) = nullptr; \
+    static funcType hook() { return hook_##name_; } \
+    static retval hook_##name_(__VA_ARGS__); \
+}; \
+retval Hook_##name_::hook_##name_(__VA_ARGS__)
+
 // Make a hook that would be installed in a particular address, but ensures the signature matches the provided method pointer.
 #define MAKE_HOOK_CHECKED_ADDR(name_, mPtr, addr_, retval, ...) \
 struct Hook_##name_ { \

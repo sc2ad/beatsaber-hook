@@ -513,6 +513,16 @@ namespace il2cpp_utils {
             il2cpp_functions::Init();
             return ::il2cpp_utils::FindMethod(klass, methodName, ::std::vector<Il2CppClass*>{}, ::std::vector<const Il2CppType*>{il2cpp_functions::class_get_type(classof(TArgs))...});
         }
+        /// @brief Finds a MethodInfo* that matches the template types.
+        static const MethodInfo* find_unsafe(::std::string_view nameSpace, ::std::string_view className, ::std::string_view methodName, bool instance = false) {
+            il2cpp_functions::Init();
+            return ::il2cpp_utils::FindMethodUnsafe(nameSpace, className, methodName, instance ? sizeof...(TArgs) - 1 : sizeof...(TArgs));
+        }
+        /// @brief Finds a MethodInfo* that matches the template types.
+        static const MethodInfo* find_unsafe(Il2CppClass* klass, ::std::string_view methodName, bool instance = false) {
+            il2cpp_functions::Init();
+            return ::il2cpp_utils::FindMethodUnsafe(klass, methodName, instance ? sizeof...(TArgs) - 1 : sizeof...(TArgs));
+        }
     };
     template<typename R, typename T, typename... TArgs>
     /// @brief Provides a specialization for instance method pointers that ensures a given method pointer matches the provided MethodInfo*.
