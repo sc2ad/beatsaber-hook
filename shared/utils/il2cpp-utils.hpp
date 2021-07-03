@@ -468,6 +468,94 @@ namespace il2cpp_utils {
             return il2cpp_utils::MakeDelegate<T>(klass, static_cast<Il2CppObject*>(nullptr), lambda);
         }
     }
+    // MethodInfo* + hook variadic function --> type check
+    template<class T>
+    struct MethodTypeCheck;
+
+    template<typename R, typename... TArgs>
+    /// @brief Provides a specialization for static method pointers that ensures a given method pointer matches the provided MethodInfo*.
+    /// @tparam R The return type
+    /// @tparam TArgs The parameter types
+    struct MethodTypeCheck<R (*)(TArgs...)> {
+        /// @brief Returns true if the provided MethodInfo* is a match for the function type: R (TArgs...).
+        /// @param info The MethodInfo* to use when checking
+        /// @return True if the MethodInfo* is a valid match, false otherwise.
+        static bool valid(const MethodInfo* info) noexcept {
+            if (!info) {
+                getLogger().warning("Null MethodInfo* provided to: MethodTypeCheck::valid!");
+                return false;
+            }
+            if ((info->flags & METHOD_ATTRIBUTE_STATIC) == 0) {
+                return false;
+            }
+            il2cpp_functions::Init();
+            if (!AssignableFrom<R>(il2cpp_functions::class_from_type(info->return_type))) {
+                return false;
+            }
+            if (sizeof...(TArgs) != info->parameters_count) {
+                return false;
+            }
+            auto* params = info->parameters;
+            // Because we check arguments left to right, we can take advantage of params++ to iterate through the elements.
+            // We know they must be valid since we check the parameter count above.
+            if (!(AssignableFrom<TArgs>(il2cpp_functions::class_from_type((params++)->parameter_type)) && ...)) {
+                return false;
+            }
+            return true;
+        }
+        /// @brief Finds a MethodInfo* that matches the template types.
+        static const MethodInfo* find(::std::string_view nameSpace, ::std::string_view className, ::std::string_view methodName) {
+            il2cpp_functions::Init();
+            return ::il2cpp_utils::FindMethod(nameSpace, className, methodName, ::std::vector<Il2CppClass*>{}, ::std::vector<const Il2CppType*>{il2cpp_functions::class_get_type(classof(TArgs))...});
+        }
+        /// @brief Finds a MethodInfo* that matches the template types.
+        static const MethodInfo* find(Il2CppClass* klass, ::std::string_view methodName) {
+            il2cpp_functions::Init();
+            return ::il2cpp_utils::FindMethod(klass, methodName, ::std::vector<Il2CppClass*>{}, ::std::vector<const Il2CppType*>{il2cpp_functions::class_get_type(classof(TArgs))...});
+        }
+    };
+    template<typename R, typename T, typename... TArgs>
+    /// @brief Provides a specialization for instance method pointers that ensures a given method pointer matches the provided MethodInfo*.
+    /// @tparam R The return type
+    /// @tparam TArgs The parameter types
+    struct MethodTypeCheck<R (T::*)(TArgs...)> {
+        /// @brief Returns true if the provided MethodInfo* is a match for the function type: R (TArgs...).
+        /// @param info The MethodInfo* to use when checking
+        /// @return True if the MethodInfo* is a valid match, false otherwise.
+        static bool valid(const MethodInfo* info) noexcept {
+            if (!info) {
+                getLogger().warning("Null MethodInfo* provided to: MethodTypeCheck::valid!");
+                return false;
+            }
+            if ((info->flags & METHOD_ATTRIBUTE_STATIC) != 0) {
+                return false;
+            }
+            il2cpp_functions::Init();
+            if (!AssignableFrom<R>(il2cpp_functions::class_from_type(info->return_type))) {
+                return false;
+            }
+            if (sizeof...(TArgs) != info->parameters_count) {
+                return false;
+            }
+            auto* params = info->parameters;
+            // Because we check arguments left to right, we can take advantage of params++ to iterate through the elements.
+            // We know they must be valid since we check the parameter count above.
+            if (!(AssignableFrom<TArgs>(il2cpp_functions::class_from_type((params++)->parameter_type)) && ...)) {
+                return false;
+            }
+            return true;
+        }
+        /// @brief Finds a MethodInfo* that matches the template types.
+        static const MethodInfo* find(::std::string_view nameSpace, ::std::string_view className, ::std::string_view methodName) {
+            il2cpp_functions::Init();
+            return ::il2cpp_utils::FindMethod(nameSpace, className, methodName, ::std::vector<Il2CppClass*>{}, ::std::vector<const Il2CppType*>{il2cpp_functions::class_get_type(classof(TArgs))...});
+        }
+        /// @brief Finds a MethodInfo* that matches the template types.
+        static const MethodInfo* find(Il2CppClass* klass, ::std::string_view methodName) {
+            il2cpp_functions::Init();
+            return ::il2cpp_utils::FindMethod(klass, methodName, ::std::vector<Il2CppClass*>{}, ::std::vector<const Il2CppType*>{il2cpp_functions::class_get_type(classof(TArgs))...});
+        }
+    };
 }
 
 #pragma pack(pop)
