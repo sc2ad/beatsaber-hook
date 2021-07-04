@@ -156,7 +156,7 @@ namespace il2cpp_utils {
         auto* asDelegate = reinterpret_cast<Delegate*>(delegate);
         AddAllocatedDelegate(asDelegate);
         if ((void*)asDelegate->method_ptr != (void*)callback) {
-            logger.error("Created Delegate's method_ptr (%p) is incorrect (should be %p)!", asDelegate->method_ptr, callback);
+            logger.error("Created Delegate's method_ptr (%p) is incorrect (should be %p)!", (void*)asDelegate->method_ptr, callback);
             return nullptr;
         }
         return delegate;

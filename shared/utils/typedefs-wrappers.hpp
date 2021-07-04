@@ -55,7 +55,7 @@ struct Counter {
         auto itr = addrRefCount.find(addr);
         if (itr != addrRefCount.end() && itr->second > 1) {
             --itr->second;
-        } else {
+        } else if (itr != addrRefCount.end()) {
             addrRefCount.erase(itr);
         }
     }
