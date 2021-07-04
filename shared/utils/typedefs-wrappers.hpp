@@ -53,10 +53,12 @@ struct Counter {
     static void remove(void* addr) {
         std::unique_lock lock(mutex);
         auto itr = addrRefCount.find(addr);
-        if (itr != addrRefCount.end() && itr->second > 1) {
-            --itr->second;
-        } else if (itr != addrRefCount.end()) {
-            addrRefCount.erase(itr);
+        if (itr != addrRefCount.end()) {
+            if (itr->second > 1) {
+                --itr->second;
+            } else {
+                addrRefCount.erase(itr);
+            }
         }
     }
     /// @brief Gets the reference count of an address, or 0 if no such address exists.
