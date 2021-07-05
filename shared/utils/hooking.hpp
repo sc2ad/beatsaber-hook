@@ -142,6 +142,34 @@ struct Hook_##name_ { \
 }; \
 retval Hook_##name_::hook_##name_(__VA_ARGS__)
 
+// Make a hook that finds a method that matches the signature provided and exists on the provided Il2CppClass* with the provided method name.
+// Ignores matching the first parameter, assuming it is an instance method.
+#define MAKE_HOOK_FIND_INSTANCE(name_, klass, mName, retval, ...) \
+struct Hook_##name_ { \
+    using funcType = retval (*)(__VA_ARGS__); \
+    constexpr static const char* name() { return #name_; } \
+    static const MethodInfo* getInfo() { return ::il2cpp_utils::MethodTypeCheck<typename ::il2cpp_utils::InstanceMethodConverter<funcType>::fType>::find(klass, mName); } \
+    static funcType* trampoline() { return &name_; } \
+    static inline retval (*name_)(__VA_ARGS__) = nullptr; \
+    static funcType hook() { return hook_##name_; } \
+    static retval hook_##name_(__VA_ARGS__); \
+}; \
+retval Hook_##name_::hook_##name_(__VA_ARGS__)
+
+// Make a hook that finds a method that matches the signature provided and exists on the provided namespace and type name, with the provided method name.
+// Ignores matching the first parameter, assuming it is an instance method.
+#define MAKE_HOOK_FIND_CLASS_INSTANCE(name_, namespaze, klassName, mName, retval, ...) \
+struct Hook_##name_ { \
+    using funcType = retval (*)(__VA_ARGS__); \
+    constexpr static const char* name() { return #name_; } \
+    static const MethodInfo* getInfo() { return ::il2cpp_utils::MethodTypeCheck<typename ::il2cpp_utils::InstanceMethodConverter<funcType>::fType>::find(namespaze, klassName, mName); } \
+    static funcType* trampoline() { return &name_; } \
+    static inline retval (*name_)(__VA_ARGS__) = nullptr; \
+    static funcType hook() { return hook_##name_; } \
+    static retval hook_##name_(__VA_ARGS__); \
+}; \
+retval Hook_##name_::hook_##name_(__VA_ARGS__)
+
 // Make a hook that finds a method that matches the signature provided and exists on the provided namespace and type name, with the provided method name.
 // THIS FUNCTION IS THE UNSAFE VARIANT, SUBTRACTS ONE FOR INSTANCE METHODS!
 #define MAKE_HOOK_FIND_CLASS_UNSAFE_INSTANCE(name_, namespaze, klassName, mName, retval, ...) \
@@ -213,7 +241,7 @@ struct Hook_##name_ { \
 retval Hook_##name_::hook_##name_(__VA_ARGS__)
 
 // Make a hook that ensures the signature matches the provided method pointer and finds a matching method from a class and method name.
-#define MAKE_HOOK_INSTANCE_FIND(name_, mPtr, mName, retval, ...) \
+#define MAKE_HOOK_CHECKED_INSTANCE_FIND(name_, mPtr, mName, retval, ...) \
 struct Hook_##name_ { \
     using funcType = retval (*)(__VA_ARGS__); \
     using classType = ::Hooking::InternalClassGetter<decltype(mPtr)>::instanceType; \

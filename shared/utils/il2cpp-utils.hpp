@@ -472,6 +472,19 @@ namespace il2cpp_utils {
     template<class T>
     struct MethodTypeCheck;
 
+    template<class T>
+    struct InstanceMethodConverter;
+
+    template<typename R>
+    struct InstanceMethodConverter<R (*)()> {
+        static_assert(!std::is_same_v<R, R>, "Cannot convert to an instance method, since the method has no parameters!");
+    };
+
+    template<typename R, typename T, typename... TArgs>
+    struct InstanceMethodConverter<R (*)(T, TArgs...)> {
+        using fType = R (*)(TArgs...);
+    };
+
     template<typename R, typename... TArgs>
     /// @brief Provides a specialization for static method pointers that ensures a given method pointer matches the provided MethodInfo*.
     /// @tparam R The return type
