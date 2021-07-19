@@ -3,6 +3,8 @@
 
 #pragma pack(push)
 
+#include "libil2cpp/il2cpp/libil2cpp/il2cpp-object-internals.h"
+#include "libil2cpp/il2cpp/libil2cpp/il2cpp-tabledefs.h"
 #include "il2cpp-functions.hpp"
 #include "logging.hpp"
 #include <vector>
@@ -359,7 +361,7 @@ namespace il2cpp_utils {
                         return fPtr(params...);
                     }
                 }
-            } catch (Il2CppExceptionWrapper &e) {
+            } catch (const Il2CppExceptionWrapper &e) {
                 logger.error("%s: Failed with exception: %s", il2cpp_functions::method_get_name(method),
                              il2cpp_utils::ExceptionToString(e.ex).c_str());
                 return std::nullopt;
