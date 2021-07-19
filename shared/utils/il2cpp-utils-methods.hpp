@@ -3,7 +3,6 @@
 
 #pragma pack(push)
 
-#include "libil2cpp/il2cpp/libil2cpp/il2cpp-object-internals.h"
 #include "libil2cpp/il2cpp/libil2cpp/il2cpp-tabledefs.h"
 #include "il2cpp-functions.hpp"
 #include "logging.hpp"
@@ -331,39 +330,51 @@ namespace il2cpp_utils {
     // Runs a MethodInfo with the specified parameters and instance, with return type TOut.
     // Assumes a static method if instance == nullptr. May fail due to exception or wrong name, hence the ::std::optional.
     ::std::optional<TOut> RunMethod(T&& instance, const MethodInfo* method, TArgs&& ...params) {
-        static auto &logger = getLogger();
-
         if constexpr(!checkTypes) {
+            static auto &logger = getLogger();
+
             if (method == nullptr)
                 return std::nullopt;
 
             Il2CppClass *clazz = method->klass;
             if (!clazz->cctor_started && !clazz->initialized) {
+                logger.debug("Initing class %s", clazz->name);
                 il2cpp_functions::Class_Init(clazz);
             }
 
+            getLogger().debug("Running method now!");
             try {
-
                 // not static
                 if ((method->flags & METHOD_ATTRIBUTE_STATIC) == 0) {
                     auto fPtr = reinterpret_cast<TOut(*)(T, TArgs...)>(method->methodPointer);
                     if constexpr(std::is_same_v<TOut, void>) {
+                        logger.debug("Running instance method void!");
                         fPtr(instance, params...);
                     } else {
-                        return fPtr(instance, params...);
+                        logger.debug("Running instance method with return of a type!");
+                        return fPtr(instance, params...); // crash here why
                     }
                 } else {
                     // static
                     auto fPtr = reinterpret_cast<TOut(*)(TArgs...)>(method->methodPointer);
                     if constexpr(std::is_same_v<TOut, void>) {
+                        logger.debug("Running static method void!");
                         fPtr(params...);
                     } else {
+                        logger.debug("Running static method with return of a type!");
                         return fPtr(params...);
                     }
                 }
-            } catch (const Il2CppExceptionWrapper &e) {
-                logger.error("%s: Failed with exception: %s", il2cpp_functions::method_get_name(method),
-                             il2cpp_utils::ExceptionToString(e.ex).c_str());
+//            } catch (const Il2CppExceptionWrapperInternal &e) {
+//                logger.error("%s: Failed with exception: %s", il2cpp_functions::method_get_name(method),
+//                             il2cpp_utils::ExceptionToString(e.ex).c_str());
+//                return std::nullopt;
+//            }
+            } catch (std::exception &e) {
+                logger.error("%s: Failed with exception: %s", il2cpp_functions::method_get_name(method), e.what());
+                return std::nullopt;
+            } catch (...) {
+                logger.error("%s: Failed with exception", il2cpp_functions::method_get_name(method));
                 return std::nullopt;
             }
         } else {
