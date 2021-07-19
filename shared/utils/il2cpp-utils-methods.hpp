@@ -284,7 +284,7 @@ namespace il2cpp_utils {
     template<class TOut = Il2CppObject*, bool checkTypes = true, class T, class... TArgs>
     // Runs a MethodInfo with the specified parameters and instance, with return type TOut.
     // Assumes a static method if instance == nullptr. May fail due to exception or wrong name, hence the ::std::optional.
-    ::std::optional<TOut> RunMethod(T&& instance, const MethodInfo* method, TArgs&& ...params) {
+    ::std::optional<TOut> RunMethodTypeSafe(T&& instance, const MethodInfo* method, TArgs&& ...params) {
         static auto& logger = getLogger();
         RET_NULLOPT_UNLESS(logger, method);
 
@@ -310,7 +310,7 @@ namespace il2cpp_utils {
                     auto* retType = ExtractType(ret);
                     if (!IsConvertible(outType, retType, false)) {
                         logger.warning("User requested TOut %s does not match the method's return object of type %s!",
-                            TypeGetSimpleName(outType), TypeGetSimpleName(retType));
+                                       TypeGetSimpleName(outType), TypeGetSimpleName(retType));
                     }
                 }
             }
@@ -318,11 +318,55 @@ namespace il2cpp_utils {
 
         if (exp) {
             logger.error("%s: Failed with exception: %s", il2cpp_functions::method_get_name(method),
-                il2cpp_utils::ExceptionToString(exp).c_str());
+                         il2cpp_utils::ExceptionToString(exp).c_str());
             return ::std::nullopt;
         }
 
         return FromIl2CppObject<TOut>(ret);
+    }
+
+    template<class TOut = Il2CppObject*, bool checkTypes = true, class T, class... TArgs>
+    // Runs a MethodInfo with the specified parameters and instance, with return type TOut.
+    // Assumes a static method if instance == nullptr. May fail due to exception or wrong name, hence the ::std::optional.
+    ::std::optional<TOut> RunMethod(T&& instance, const MethodInfo* method, TArgs&& ...params) {
+        static auto &logger = getLogger();
+
+        if constexpr(!checkTypes) {
+            if (method == nullptr)
+                return std::nullopt;
+
+            Il2CppClass *clazz = method->klass;
+            if (!clazz->cctor_started && !clazz->initialized) {
+                il2cpp_functions::Class_Init(clazz);
+            }
+
+            try {
+
+                // not static
+                if ((method->flags & METHOD_ATTRIBUTE_STATIC) == 0) {
+                    auto fPtr = reinterpret_cast<TOut(*)(T, TArgs...)>(method->methodPointer);
+                    if constexpr(std::is_same_v<TOut, void>) {
+                        fPtr(instance, params...);
+                    } else {
+                        return fPtr(instance, params...);
+                    }
+                } else {
+                    // static
+                    auto fPtr = reinterpret_cast<TOut(*)(TArgs...)>(method->methodPointer);
+                    if constexpr(std::is_same_v<TOut, void>) {
+                        fPtr(params...);
+                    } else {
+                        return fPtr(params...);
+                    }
+                }
+            } catch (Il2CppExceptionWrapper &e) {
+                logger.error("%s: Failed with exception: %s", il2cpp_functions::method_get_name(method),
+                             il2cpp_utils::ExceptionToString(e.ex).c_str());
+                return std::nullopt;
+            }
+        } else {
+            return RunMethodTypeSafe<TOut, checkTypes, T, TArgs...>(instance, method, params...);
+        }
     }
 
     template<class TOut = Il2CppObject*, bool checkTypes = true, class... TArgs>
