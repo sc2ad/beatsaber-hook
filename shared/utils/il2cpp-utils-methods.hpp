@@ -349,10 +349,10 @@ namespace il2cpp_utils {
                     auto fPtr = reinterpret_cast<TOut(*)(T, TArgs...)>(method->methodPointer);
                     if constexpr(std::is_same_v<TOut, void>) {
                         logger.debug("Running instance method void!");
-                        fPtr(instance, params...);
+                        fPtr(std::forward<T>(instance), params...);
                     } else {
                         logger.debug("Running instance method with return of a type!");
-                        return fPtr(instance, params...); // crash here why
+                        return fPtr(std::forward<T>(instance), params...); // crash here why
                     }
                 } else {
                     // static
